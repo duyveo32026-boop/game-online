@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Giáo viên</title>
+<style>
+body{
+    font-family: Arial, sans-serif;
+    padding:20px;
+    background:#f4f6fb;
+}
+h1{
+    color:#0d47a1;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+th,td{
+    border:1px solid #ccc;
+    padding:10px;
+    text-align:center;
+}
+th{
+    background:#1976d2;
+    color:white;
+}
+button{
+    padding:10px 20px;
+    margin-top:20px;
+}
+</style>
+</head>
+<body>
+
+<h1>DASHBOARD GIÁO VIÊN</h1>
+
+<button onclick="loadData()">Làm mới dữ liệu</button>
+
+<table>
+    <thead>
+        <tr>
+            <th>STT</th>
+            <th>Tên học sinh</th>
+            <th>Điểm</th>
+            <th>Thời gian</th>
+        </tr>
+    </thead>
+    <tbody id="resultBody"></tbody>
+</table>
+
+<script>
+async function loadData(){
+    const res = await fetch('/api/results');
+    const data = await res.json();
+
+    let html = '';
+    data.forEach((item,index)=>{
+        html += `
+        <tr>
+            <td>${index+1}</td>
+            <td>${item.name || 'Chưa có tên'}</td>
+            <td>${item.score || 0}</td>
+            <td>${item.time || ''}</td>
+        </tr>`;
+    });
+
+    document.getElementById('resultBody').innerHTML = html;
+}
+
+loadData();
+</script>
+
+</body>
+</html>
