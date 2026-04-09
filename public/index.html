@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Hằng Đẳng Thức Vui Nhộn</title>
+<style>
+body{
+  font-family:Arial,sans-serif;
+  text-align:center;
+  background:linear-gradient(135deg,#141e30,#243b55);
+  color:white;
+  margin:0;
+  padding:0 0 30px 0;
+  overflow-x:hidden;
+}
+h1{
+  font-family:Arial,sans-serif;
+  margin:15px 0 10px;
+  background:linear-gradient(90deg,#fff7ae,#ffd700,#ffb300);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  text-shadow:0 0 6px rgba(255,215,0,.55),0 0 12px rgba(255,215,0,.35);
+  animation:glowTitle 2s ease-in-out infinite alternate;
+}
+@keyframes glowTitle{
+  from{text-shadow:0 0 4px rgba(255,215,0,.45),0 0 8px rgba(255,215,0,.25);}
+  to{text-shadow:0 0 8px rgba(255,215,0,.7),0 0 14px rgba(255,215,0,.4);}
+}
+.topBar{
+  margin-top:10px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+#infoBar{
+  margin:14px 0 8px;
+  font-size:18px;
+}
+#levelBar{
+  margin:8px 0 16px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.level-btn{
+  background:#fff;
+  color:#0b57d0;
+  font-weight:bold;
+  border:2px solid #0b57d0;
+}
+.level-btn.active{
+  background:#0b57d0;
+  color:#fff;
+}
+.level-btn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+#gameBoard{
+  display:grid;
+  grid-template-columns:repeat(4,170px);
+  gap:18px;
+  justify-content:center;
+  margin:25px auto 10px;
+  padding:12px;
+  perspective:1000px;
+}
+.card-wrap{
+  width:170px;
+  height:64px;
+  perspective:1000px;
+}
+.card{
+  position:relative;
+  width:100%;
+  height:100%;
+  transform-style:preserve-3d;
+  transition:transform .5s ease;
+  cursor:pointer;
+  user-select:none;
+}
+.card.flipped{
+  transform:rotateY(180deg);
+}
+.card-face{
+  position:absolute;
+  width:100%;
+  height:100%;
+  border-radius:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:8px 10px;
+  box-sizing:border-box;
+  backface-visibility:hidden;
+  font-weight:bold;
+  font-size:16px;
+  line-height:1.2;
+  box-shadow:0 6px 16px rgba(0,0,0,.18);
+  border:2px solid transparent;
+  overflow:hidden;
+}
+.card-front{
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  color:#fff;
+}
+.card-back{
+  background:#fff;
+  color:#0b57d0;
+  transform:rotateY(180deg);
+  transition:background .2s,color .2s,border-color .2s,box-shadow .2s;
+  position:relative;
+}
+.card-content{
+  display:block;
+  width:100%;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.card.selected .card-back{
+  background:#2563eb !important;
+  color:#fff !important;
+  border-color:#2563eb !important;
+  box-shadow:0 0 12px rgba(37,99,235,.65);
+}
+.card.correct .card-back{
+  background:linear-gradient(135deg,#10b981,#34d399) !important;
+  color:#fff !important;
+  border-color:#10b981 !important;
+  box-shadow:0 0 18px rgba(16,185,129,.55);
+}
+.card.wrong .card-back{
+  background:#fee2e2 !important;
+  color:#b91c1c !important;
+  border-color:#ef4444 !important;
+}
+.countdown-badge{
+  position:absolute;
+  top:4px;
+  right:6px;
+  min-width:20px;
+  height:20px;
+  padding:0 5px;
+  border-radius:999px;
+  background:#ef4444;
+  color:#fff;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  font-weight:bold;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+  z-index:3;
+}
+.countdown-badge.show{
+  display:flex;
+}
+#formulaBox{
+  margin:20px auto;
+  width:min(900px,85%);
+  background:#fff;
+  color:red;
+  padding:14px;
+  border-radius:14px;
+  font-size:20px;
+  font-weight:bold;
+  box-sizing:border-box;
+}
+#finishBox{
+  display:none;
+  background:#fff;
+  color:#000;
+  width:min(900px,85%);
+  margin:20px auto;
+  padding:24px 20px;
+  border-radius:16px;
+  box-sizing:border-box;
+}
+.formula-item{
+  margin:10px 0;
+  line-height:1.5;
+  font-size:18px;
+}
+.formula-name{
+  font-weight:bold;
+  color:#000;
+}
+#teacherPanel{
+  display:none;
+  background:#fff;
+  color:#000;
+  width:min(1120px,95%);
+  margin:20px auto;
+  padding:18px;
+  border-radius:16px;
+  box-sizing:border-box;
+}
+#resultList{
+  margin-top:10px;
+}
+.result-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  margin:8px 0;
+  background:#f5f7fb;
+  border-radius:10px;
+  flex-wrap:wrap;
+}
+.result-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+button,input,select,textarea{
+  padding:10px 12px;
+  margin:4px;
+  border-radius:8px;
+  border:none;
+  font-size:15px;
+  font-family:Arial,sans-serif;
+}
+select{min-width:120px;}
+button{
+  background:#11c5c6;
+  cursor:pointer;
+}
+button:hover{opacity:.92;}
+.delete-btn{background:#ef4444;color:#fff;}
+.lesson-btn{background:#8b5cf6;color:#fff;}
+.comment-btn{background:#f59e0b;color:#fff;}
+.view-comment-btn{background:#22c55e;color:#fff;display:none;}
+#chartRow{display:flex;gap:6px;overflow:visible;align-items:flex-start;justify-content:space-between;flex-wrap:nowrap;padding:8px 0 4px;margin-top:12px;}
+.level-chart-canvas{flex:0 0 auto;background:#e5e7eb;border-radius:12px;}
+.level-detail-card{background:#f8fafc;border:2px solid #dbeafe;border-radius:12px;padding:12px 14px;margin:10px 0;color:#111827;line-height:1.65;text-align:left;}
+.level-detail-card h4{margin:0 0 8px;color:#0b57d0;}
+.level-detail-empty{background:#f8fafc;border:2px dashed #cbd5e1;border-radius:12px;padding:14px;color:#475569;}
+.lesson-section-title{font-weight:bold;margin:10px 0 6px;}
+.lesson-section-title.correct-title{color:#2563eb;}
+.lesson-section-title.wrong-title{color:#dc2626;}
+.save-comment-btn{background:#2563eb;color:#fff;}
+.delete-all-btn{background:#b91c1c;color:#fff;}
+canvas{
+  max-width:100%;
+  margin-top:10px;
+  background:#fff;
+  border-radius:10px;
+}
+#chart{
+  display:block;
+  margin:12px auto 0;
+  background:#f3f4f6;
+  border-radius:12px;
+}
+#celebrationOverlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  z-index:9999;
+  overflow:hidden;
+}
+#celebrationOverlay.show{display:flex;}
+#celebrationMessage{
+  position:relative;
+  z-index:2;
+  background:rgba(0,0,0,.58);
+  border:2px solid rgba(255,215,0,.75);
+  color:#fff7ae;
+  padding:18px 28px;
+  border-radius:18px;
+  font-size:34px;
+  font-weight:bold;
+  box-shadow:0 0 18px rgba(255,215,0,.45);
+}
+.confetti{
+  position:absolute;
+  width:10px;
+  height:18px;
+  opacity:.95;
+  top:-30px;
+  animation:fall linear forwards;
+}
+@keyframes fall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1;}
+  100%{transform:translateY(110vh) rotate(720deg);opacity:.9;}
+}
+.center-last-row{
+  display:flex;
+  justify-content:center;
+  gap:18px;
+  grid-column:1 / -1;
+}
+#loginModal,#commentModal,#studentCommentModal,#lessonModal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10000;
+  padding:20px;
+  box-sizing:border-box;
+}
+#loginModal.show,#commentModal.show,#studentCommentModal.show,#lessonModal.show{
+  display:flex;
+}
+.login-box,.comment-box{
+  width:min(520px,92vw);
+  background:#fff;
+  color:#111827;
+  border-radius:18px;
+  padding:22px 20px 18px;
+  box-sizing:border-box;
+  box-shadow:0 14px 40px rgba(0,0,0,.28);
+  text-align:left;
+}
+.login-box h3,.comment-box h3{
+  margin:0 0 14px 0;
+  text-align:center;
+  color:#0b57d0;
+}
+.login-box label,.comment-box label{
+  display:block;
+  font-weight:bold;
+  margin:10px 0 6px;
+}
+.login-box input,.comment-box input,.comment-box textarea{
+  width:100%;
+  margin:0;
+  padding:12px 14px;
+  border:2px solid #dbeafe;
+  border-radius:10px;
+  box-sizing:border-box;
+  outline:none;
+}
+.comment-box textarea{
+  min-height:140px;
+  resize:vertical;
+}
+.login-actions,.comment-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:16px;
+  flex-wrap:wrap;
+}
+.login-cancel,.comment-cancel{
+  background:#e5e7eb;
+  color:#111827;
+}
+.login-submit{
+  background:#2563eb;
+  color:#fff;
+}
+#loginError{
+  min-height:20px;
+  margin-top:10px;
+  font-size:14px;
+  color:#dc2626;
+  text-align:center;
+  font-weight:bold;
+}
+.comment-student-info{
+  background:#eff6ff;
+  border-radius:12px;
+  padding:10px 12px;
+  margin-bottom:12px;
+  color:#1e3a8a;
+  line-height:1.5;
+}
+.student-comment-content{
+  white-space:normal;
+  background:#f8fafc;
+  border:2px solid #dbeafe;
+  border-radius:12px;
+  padding:14px;
+  line-height:1.6;
+  min-height:80px;
+  max-height:65vh;
+  overflow-y:auto;
+}
+
+#welcomeOverlay,#rulesOverlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:20000;
+  padding:20px;
+  box-sizing:border-box;
+}
+#welcomeOverlay.show,#rulesOverlay.show{display:flex;}
+#welcomeOverlay{
+  background:radial-gradient(circle at top,#27496d 0%,#14213d 42%,#0b1220 100%);
+  overflow:hidden;
+}
+#welcomeFireworks{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+.welcome-box{
+  position:relative;
+  z-index:2;
+  width:min(920px,92vw);
+  text-align:center;
+  background:rgba(255,255,255,.10);
+  border:2px solid rgba(255,255,255,.22);
+  backdrop-filter:blur(8px);
+  border-radius:28px;
+  padding:34px 28px;
+  box-shadow:0 22px 70px rgba(0,0,0,.35);
+}
+.welcome-badge{
+  display:inline-block;
+  padding:8px 18px;
+  border-radius:999px;
+  background:rgba(255,215,0,.16);
+  border:1px solid rgba(255,215,0,.38);
+  color:#fff7ae;
+  font-weight:bold;
+  letter-spacing:.5px;
+  margin-bottom:18px;
+}
+.welcome-title{
+  font-family:Arial,Helvetica,sans-serif;
+  margin:0;
+  font-size:42px;
+  line-height:1.25;
+  color:#ffffff;
+  text-shadow:0 0 14px rgba(255,215,0,.30);
+  font-weight:700;
+  font-style:normal;
+  letter-spacing:0;
+}
+.welcome-title strong{
+  color:#ffe066;
+  font-family:Arial,Helvetica,sans-serif;
+  font-weight:700;
+  font-style:normal;
+  letter-spacing:0;
+}
+.welcome-subtitle{
+  margin:14px auto 0;
+  max-width:720px;
+  font-size:18px;
+  line-height:1.7;
+  color:#e5eefc;
+}
+.spark{
+  position:absolute;
+  border-radius:50%;
+  animation:sparkBoom 1.7s ease-out forwards;
+  opacity:.95;
+}
+@keyframes sparkBoom{
+  0%{transform:translate(0,0) scale(.2);opacity:1;}
+  100%{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0;}
+}
+#rulesOverlay{background:rgba(7,13,24,.72);}
+.rules-box{
+  width:min(980px,94vw);
+  max-height:88vh;
+  overflow:auto;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  color:#111827;
+  border-radius:24px;
+  padding:26px 24px 20px;
+  box-sizing:border-box;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+}
+.rules-box h2{
+  margin:0 0 12px;
+  text-align:center;
+  color:#0b57d0;
+  font-size:30px;
+}
+.rules-intro{
+  text-align:center;
+  color:#334155;
+  line-height:1.6;
+  margin-bottom:18px;
+}
+.rules-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+  margin:16px 0 18px;
+}
+.rule-card{
+  background:#f8fafc;
+  border:1px solid #dbeafe;
+  border-radius:16px;
+  padding:14px 14px 12px;
+  box-shadow:0 8px 18px rgba(37,99,235,.08);
+}
+.rule-card h4{
+  margin:0 0 8px;
+  color:#0b57d0;
+  font-size:18px;
+}
+.rule-card p{
+  margin:0;
+  line-height:1.6;
+  color:#334155;
+  font-size:15px;
+}
+.rules-list{
+  background:#eff6ff;
+  border-radius:16px;
+  padding:14px 16px;
+  line-height:1.7;
+  color:#1e3a8a;
+}
+.rules-actions{
+  margin-top:18px;
+  display:flex;
+  justify-content:center;
+}
+.rules-actions button{
+  background:#0b57d0;
+  color:#fff;
+  font-weight:bold;
+  padding:12px 24px;
+  border-radius:12px;
+}
+
+</style>
+</head>
+<body>
+
+<div id="welcomeOverlay" class="show">
+  <div id="welcomeFireworks"></div>
+  <div class="welcome-box">
+    <div class="welcome-badge">✨ Chào mừng đến với sân chơi Toán học ✨</div>
+    <h2 class="welcome-title">Chào mừng các bạn đến với game<br><strong>ÔN TẬP HẰNG ĐẲNG THỨC ĐÁNG NHỚ</strong></h2>
+    <div class="welcome-subtitle">Hãy sẵn sàng bước vào hành trình chinh phục 7 cấp độ với nhiều thử thách hấp dẫn, luyện tư duy nhanh, nhớ công thức chắc và ghép thẻ thật chính xác.</div>
+  </div>
+</div>
+
+<div id="rulesOverlay">
+  <div class="rules-box">
+    <h2>📘 THỂ LỆ GAME</h2>
+    <div class="rules-intro">Người chơi đọc kỹ hướng dẫn trước khi bắt đầu. Sau khi đóng bảng này, bạn sẽ vào giao diện chính của game và bạn có thể nhập thông tin để chơi.</div>
+    <div class="rules-list">
+      <b>Cách chơi:</b> Nhập họ tên, lớp, trường rồi chọn cấp độ. Lật thẻ và ghép đúng hai vế của hằng đẳng thức. Mỗi cặp ghép đúng được cộng 10 điểm. Một số cấp độ có giới hạn thời gian và số lần ghép sai tối đa.
+    </div>
+    <div class="rules-grid">
+      <div class="rule-card"><h4>Cấp độ 1</h4><p>Dễ nhất. Không giới hạn thời gian, không giới hạn số lần sai. Phù hợp để làm quen luật chơi.</p></div>
+      <div class="rule-card"><h4>Cấp độ 2</h4><p>Dễ. Có giới hạn thời gian 120 giây, không giới hạn số lần sai. Tăng tốc độ quan sát.</p></div>
+      <div class="rule-card"><h4>Cấp độ 3</h4><p>Trung bình. Thời gian 90 giây, chỉ được sai tối đa 5 lần. Cần cẩn thận khi chọn cặp.</p></div>
+      <div class="rule-card"><h4>Cấp độ 4</h4><p>Khó. Thời gian 60 giây, chỉ được sai tối đa 3 lần. Áp lực thời gian cao hơn.</p></div>
+      <div class="rule-card"><h4>Cấp độ 5</h4><p>Khó. Thẻ chỉ xem bằng cách rê chuột. Rê vào đâu lật thẻ ở đó, rê ra là thẻ úp lại.</p></div>
+      <div class="rule-card"><h4>Cấp độ 6</h4><p>Rất khó. Rê chuột để xem thẻ, mỗi thẻ chỉ hiện tối đa 5 giây. Chỉ được ghép sai tối đa 5 lần.</p></div>
+      <div class="rule-card"><h4>Cấp độ 7</h4><p>Cực khó. Rê chuột để xem thẻ, mỗi thẻ chỉ hiện tối đa 3 giây. Chỉ được ghép sai tối đa 3 lần.</p></div>
+    </div>
+    <div class="rules-actions">
+      <button onclick="closeRulesOverlay()">Đã hiểu, vào game</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="celebrationOverlay">
+  <div id="celebrationMessage">🎉 Chúc mừng bạn đã hoàn thành cấp độ! 🎉</div>
+</div>
+
+<h1>🏆 ÔN TẬP HẰNG ĐẲNG THỨC ĐÁNG NHỚ</h1>
+
+<div class="topBar">
+  <input id="studentName" list="studentNameSuggestions" placeholder="Nhập tên học sinh" oninput="handleStudentNameInput()" autocomplete="off">
+  <datalist id="studentNameSuggestions"></datalist>
+  <input id="className" placeholder="Chọn lớp" oninput="handleStudentNameInput();handleSchoolNameInput();toggleViewCommentButton()" autocomplete="off">
+  <input id="schoolName" list="schoolNameSuggestions" placeholder="Trường" oninput="handleSchoolNameInput()" autocomplete="off">
+  <datalist id="schoolNameSuggestions"></datalist>
+  <button onclick="startGame()">Bắt đầu</button>
+  <button id="viewCommentBtn" class="view-comment-btn" onclick="showStudentComment()">Chi tiết</button>
+</div>
+
+<div id="infoBar">
+  👤 <span id="showName">---</span> |
+  ⭐ Điểm: <span id="scoreText">0</span> |
+  ⏱ <span id="time">0</span>s |
+  ❤️ <span id="livesText">∞</span> |
+  🔥 Combo: <span id="comboText">0</span>
+</div>
+
+<div id="levelBar">
+  <button class="level-btn active" onclick="setLevel(1,this)">Cấp độ 1</button>
+  <button class="level-btn" onclick="setLevel(2,this)">Cấp độ 2</button>
+  <button class="level-btn" onclick="setLevel(3,this)">Cấp độ 3</button>
+  <button class="level-btn" onclick="setLevel(4,this)">Cấp độ 4</button>
+  <button class="level-btn" onclick="setLevel(5,this)">Cấp độ 5</button>
+  <button class="level-btn" onclick="setLevel(6,this)">Cấp độ 6</button>
+  <button class="level-btn" onclick="setLevel(7,this)">Cấp độ 7</button>
+</div>
+
+<div id="gameBoard"></div>
+<div id="formulaBox">📘 Hằng đẳng thức sẽ hiển thị tại đây</div>
+<div id="finishBox"></div>
+
+<button onclick="openTeacherLogin()">Dashboard giáo viên</button>
+<button onclick="presentationMode()">🎥 Chế độ toàn màn hình</button>
+
+<div id="teacherPanel">
+  <h3>🏫 Kết quả học sinh</h3>
+  <div id="resultList"></div>
+  <div style="margin-top:10px;">
+    <button class="delete-all-btn" onclick="deleteAllResults()">🗑 Xóa hết kết quả</button>
+  </div>
+  <div id="statsBox" style="margin-top:16px;"></div>
+  <button onclick="exportCSV()">📄 Xuất dữ liệu Excel</button>
+  <div id="chartRow"></div>
+</div>
+
+<div id="loginModal">
+  <div class="login-box">
+    <h3>🔐 Đăng nhập Dashboard giáo viên</h3>
+    <label for="teacherUser">Tài khoản</label>
+    <input id="teacherUser" type="text" placeholder="Nhập tài khoản">
+    <label for="teacherPass">Mật khẩu</label>
+    <input id="teacherPass" type="password" placeholder="Nhập mật khẩu">
+    <div id="loginError"></div>
+    <div class="login-actions">
+      <button class="login-cancel" onclick="closeTeacherLogin()">Hủy</button>
+      <button class="login-submit" onclick="teacherLogin()">Đăng nhập</button>
+    </div>
+  </div>
+</div>
+
+<div id="commentModal">
+  <div class="comment-box">
+    <h3>📝 Nhận xét học sinh</h3>
+    <div id="commentStudentInfo" class="comment-student-info"></div>
+    <label for="teacherCommentText">Nội dung nhận xét</label>
+    <textarea id="teacherCommentText" placeholder="Nhập nhận xét cho học sinh..."></textarea>
+    <div class="comment-actions">
+      <button class="comment-cancel" onclick="closeCommentModal()">Hủy</button>
+      <button class="save-comment-btn" onclick="saveTeacherComment()">Lưu nhận xét</button>
+    </div>
+  </div>
+</div>
+
+<div id="studentCommentModal">
+  <div class="comment-box">
+    <h3>📋 Chi tiết theo cấp độ</h3>
+    <div id="studentCommentInfo" class="comment-student-info"></div>
+    <div id="studentCommentContent" class="student-comment-content"></div>
+    <div class="comment-actions">
+      <button class="comment-cancel" onclick="closeStudentCommentModal()">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<div id="lessonModal">
+  <div class="comment-box">
+    <h3>📘 Bài học sinh đã ghép</h3>
+    <div id="lessonStudentInfo" class="comment-student-info"></div>
+    <div id="lessonContent" class="student-comment-content"></div>
+    <div class="comment-actions">
+      <button class="comment-cancel" onclick="closeLessonModal()">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<audio id="clickSound" preload="auto">
+  <source src="/sound/click.mp3" type="audio/mpeg">
+</audio>
+<audio id="clapSound" preload="auto">
+  <source src="/sound/clap.mp3" type="audio/mpeg">
+</audio>
+<audio id="wrongSound" preload="auto">
+  <source src="/sound/wrong.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const clickSound=document.getElementById("clickSound");
+const clapSound=document.getElementById("clapSound");
+const wrongSound=document.getElementById("wrongSound");
+
+const SERVER_RESULTS_KEY="khkt_server_cache";
+let audioUnlocked=false;
+let welcomeAudioPlayed=false;
+let welcomeSoundContext=null;
+
+function resetAudio(audio){
+  if(!audio) return;
+  try{
+    audio.pause();
+    audio.currentTime=0;
+  }catch(e){}
+}
+
+function safePlay(audio,volume=1){
+  if(!audio) return Promise.resolve(false);
+  try{
+    audio.pause();
+    audio.currentTime=0;
+    audio.volume=volume;
+    const playPromise=audio.play();
+    if(playPromise && typeof playPromise.then==='function'){
+      return playPromise.then(()=>true).catch(()=>false);
+    }
+    return Promise.resolve(true);
+  }catch(e){
+    return Promise.resolve(false);
+  }
+}
+
+function unlockSingleAudio(audio){
+  if(!audio) return Promise.resolve();
+  try{
+    audio.volume=0;
+    const p=audio.play();
+    if(p && typeof p.then==='function'){
+      return p.then(()=>{
+        audio.pause();
+        audio.currentTime=0;
+        audio.volume=1;
+      }).catch(()=>{});
+    }
+    audio.pause();
+    audio.currentTime=0;
+    audio.volume=1;
+    return Promise.resolve();
+  }catch(e){
+    return Promise.resolve();
+  }
+}
+
+function unlockAudio(){
+  if(audioUnlocked) return;
+  audioUnlocked=true;
+  Promise.all([
+    unlockSingleAudio(clickSound),
+    unlockSingleAudio(clapSound),
+    unlockSingleAudio(wrongSound)
+  ]).catch(()=>{});
+}
+
+function playWelcomeFallbackFanfare(){
+  try{
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx) return;
+    welcomeSoundContext=welcomeSoundContext||new AudioCtx();
+    const ctx=welcomeSoundContext;
+    if(ctx.state==='suspended') ctx.resume().catch(()=>{});
+    const now=ctx.currentTime;
+    const notes=[523.25,659.25,783.99,1046.5];
+    notes.forEach((freq,i)=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type='triangle';
+      osc.frequency.setValueAtTime(freq,now+i*0.18);
+      gain.gain.setValueAtTime(0.0001,now+i*0.18);
+      gain.gain.exponentialRampToValueAtTime(0.16,now+i*0.18+0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001,now+i*0.18+0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now+i*0.18);
+      osc.stop(now+i*0.18+0.24);
+    });
+  }catch(e){}
+}
+
+async function playWelcomeSound(forceFallback=false){
+  if(welcomeAudioPlayed) return;
+  if(forceFallback){
+    playWelcomeFallbackFanfare();
+    welcomeAudioPlayed=true;
+    return;
+  }
+  const ok=await safePlay(clapSound,1);
+  if(ok){
+    welcomeAudioPlayed=true;
+  }else{
+    playWelcomeFallbackFanfare();
+  }
+}
+
+function createWelcomeFireworks(){
+  const box=document.getElementById('welcomeFireworks');
+  if(!box) return;
+  box.innerHTML='';
+  const colors=['#ffd166','#ef476f','#06d6a0','#118ab2','#ffffff','#ffe066','#c77dff'];
+  for(let burst=0;burst<7;burst++){
+    const cx=12+Math.random()*76;
+    const cy=12+Math.random()*46;
+    for(let i=0;i<28;i++){
+      const spark=document.createElement('span');
+      spark.className='spark';
+      const angle=(Math.PI*2*i)/28 + Math.random()*0.15;
+      const dist=70+Math.random()*110;
+      spark.style.left=cx+'%';
+      spark.style.top=cy+'%';
+      spark.style.width=(5+Math.random()*6)+'px';
+      spark.style.height=spark.style.width;
+      spark.style.background=colors[(i+burst)%colors.length];
+      spark.style.setProperty('--dx',Math.cos(angle)*dist+'px');
+      spark.style.setProperty('--dy',Math.sin(angle)*dist+'px');
+      spark.style.animationDelay=(burst*0.18)+'s';
+      box.appendChild(spark);
+    }
+  }
+}
+
+function showWelcomeSequence(){
+  const welcome=document.getElementById('welcomeOverlay');
+  const rules=document.getElementById('rulesOverlay');
+  if(!welcome||!rules) return;
+  welcome.classList.add('show');
+  createWelcomeFireworks();
+  playWelcomeSound();
+  setTimeout(()=>{ if(!welcomeAudioPlayed) playWelcomeSound(true); },600);
+  setTimeout(()=>{
+    welcome.classList.remove('show');
+    rules.classList.add('show');
+  },4000);
+}
+
+async function closeRulesOverlay(){
+  try{
+    unlockAudio();
+    const played=await safePlay(clapSound,1);
+    if(!played){
+      playWelcomeFallbackFanfare();
+    }
+  }catch(e){
+    try{ playWelcomeFallbackFanfare(); }catch(_){}
+  }
+  document.getElementById('rulesOverlay').classList.remove('show');
+}
+
+function bindGlobalAudioUnlock(){
+  const unlockHandler=()=>{
+    unlockAudio();
+    const welcomeVisible=document.getElementById('welcomeOverlay')?.classList.contains('show');
+    if(welcomeVisible && !welcomeAudioPlayed){
+      playWelcomeSound();
+    }
+  };
+  ['pointerdown','mousedown','touchstart','keydown'].forEach(evt=>{
+    document.addEventListener(evt,unlockHandler,{passive:true});
+  });
+}
+
+async function saveResultToServer(payload){
+  try{
+    const res=await fetch('/api/save-result',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Server save failed');
+    return await res.json();
+  }catch(error){
+    console.warn('Không lưu được kết quả lên server:',error);
+    return null;
+  }
+}
+
+async function syncResultsFromServer(){
+  try{
+    const res=await fetch('/api/results',{cache:'no-store'});
+    if(!res.ok) throw new Error('Cannot fetch results');
+    const data=await res.json();
+    if(Array.isArray(data)){
+      localStorage.setItem('khkt',JSON.stringify(data));
+      localStorage.setItem(SERVER_RESULTS_KEY,JSON.stringify(data));
+      return data;
+    }
+  }catch(error){
+    console.warn('Không đồng bộ được dữ liệu server:',error);
+  }
+  return JSON.parse(localStorage.getItem('khkt')||'[]');
+}
+
+const APP_STATE_KEY="khkt_ui_state";
+let currentStudentDetailOpen=false;
+let teacherLoggedIn=false;
+
+let activeCommentKey="";
+let currentLevel3Pairs=[];
+let currentLevel3WrongTemplates=[];
+let currentLevel4Pairs=[];
+let currentLevel4WrongTemplates=[];
+let currentLevel6Pairs=[];
+let currentLevel6WrongTemplates=[];
+
+let cards=[];
+let selected=[];
+let scoreValue=0;
+let correctCount=0;
+let wrongPairCount=0;
+let currentMatchedPairs=[];
+let currentAttemptPairs=[];
+let startTime=0;
+let timer=null;
+let lockBoard=false;
+let currentLevel=1;
+let lives=999;
+let timeLimit=0;
+let combo=0;
+let celebrationDone=false;
+let attemptSaved=false;
+let gameSessionActive=false;
+
+const cardTimers=new WeakMap();
+
+const basePairs=[
+["(a+b)²","a²+2ab+b²","(a+b)² = a² + 2ab + b²","Bình phương của một tổng"],
+["(a-b)²","a²-2ab+b²","(a-b)² = a² - 2ab + b²","Bình phương của một hiệu"],
+["a²-b²","(a-b)(a+b)","a² - b² = (a-b)(a+b)","Hiệu hai bình phương"],
+["(a+b)³","a³+3a²b+3ab²+b³","(a+b)³ = a³ + 3a²b + 3ab² + b³","Lập phương của một tổng"],
+["(a-b)³","a³-3a²b+3ab²-b³","(a-b)³ = a³ - 3a²b + 3ab² - b³","Lập phương của một hiệu"],
+["a³+b³","(a+b)(a²-ab+b²)","a³ + b³ = (a+b)(a²-ab+b²)","Tổng hai lập phương"],
+["a³-b³","(a-b)(a²+ab+b²)","a³ - b³ = (a-b)(a²+ab+b²)","Hiệu hai lập phương"]
+];
+
+const defaultWrongTemplates=[
+"a²+2ab-b²","a²-2ab-b²","a²+ab+b²","a²+3ab+b²",
+"a³+2a²b+3ab²+b³","a³+3a²b+ab²+b³","a³-2a²b+3ab²-b³","a³-3a²b+ab²-b³",
+"(a+b)(a²+ab+b²)","(a+b)(a²+ab-b²)","(a-b)(a²+ab-b²)","(a-b)(a²-ab-b²)",
+"a³+b²","a²-b³","a²+b³","a³-3ab²-b³","a³+3ab²+b³","(a+b)(a²-ab+b³)",
+"(a-b)(a²+ab+b³)","a²-3ab+b²"
+];
+
+function normalizeText(value){
+  return String(value||"").trim().toLowerCase().replace(/\s+/g," ");
+}
+
+function normalizeLookupText(value){
+  return normalizeText(value)
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g,"")
+    .replace(/đ/g,"d")
+    .replace(/[^a-z0-9]+/g," ")
+    .trim()
+    .replace(/\s+/g," ");
+}
+
+function makeStudentKey(name,className,schoolName){
+  return [normalizeText(name),normalizeText(className),normalizeText(schoolName)].join("|");
+}
+
+function makeStudentLookupKey(name,className,schoolName){
+  return [normalizeLookupText(name),normalizeLookupText(className),normalizeLookupText(schoolName)].join("|");
+}
+
+function makeStudentLevelKey(name,className,schoolName,level){
+  return [makeStudentKey(name,className,schoolName), Number(level)||1].join("|");
+}
+
+function normalizeClassLookup(value){
+  const text=normalizeLookupText(value).replace(/\blop\b/g," ").trim();
+  const match=text.match(/\d+/);
+  return match ? match[0] : text;
+}
+
+function normalizeSchoolLookup(value){
+  return normalizeLookupText(value).replace(/\btruong\b/g," ").trim().replace(/\s+/g," ");
+}
+
+function isLooseSameStudent(a,b){
+  return a===b || a.includes(b) || b.includes(a);
+}
+
+function isSameStudentRecord(item,name,className,schoolName){
+  const inputName=normalizeLookupText(name);
+  const itemName=normalizeLookupText(item.name);
+  const inputClass=normalizeClassLookup(className);
+  const itemClass=normalizeClassLookup(item.className);
+  const inputSchool=normalizeSchoolLookup(schoolName);
+  const itemSchool=normalizeSchoolLookup(item.schoolName);
+
+  const nameMatch=inputName && itemName && isLooseSameStudent(itemName,inputName);
+  const classMatch=inputClass && itemClass ? itemClass===inputClass : true;
+  const schoolMatch=inputSchool && itemSchool ? isLooseSameStudent(itemSchool,inputSchool) : true;
+
+  return !!(nameMatch && classMatch && schoolMatch);
+}
+
+function getAllResults(){
+  return (JSON.parse(localStorage.getItem("khkt"))||[]).map(normalizeStoredAttempt);
+}
+
+function getUniqueStudentRecords(){
+  const map=new Map();
+  getAllResults().forEach(item=>{
+    const key=makeStudentKey(item.name,item.className,item.schoolName);
+    if(!map.has(key)){
+      map.set(key,{
+        name:String(item.name||"").trim(),
+        className:String(item.className||"").trim(),
+        schoolName:String(item.schoolName||"").trim()
+      });
+    }
+  });
+  return Array.from(map.values()).sort((a,b)=>{
+    const byName=a.name.localeCompare(b.name,'vi',{sensitivity:'base'});
+    if(byName!==0) return byName;
+    const byClass=String(a.className).localeCompare(String(b.className),'vi',{sensitivity:'base'});
+    if(byClass!==0) return byClass;
+    return String(a.schoolName).localeCompare(String(b.schoolName),'vi',{sensitivity:'base'});
+  });
+}
+
+function updateSuggestionList(listId, values, currentValue){
+  const list=document.getElementById(listId);
+  if(!list) return;
+  const normalizedCurrent=normalizeLookupText(currentValue);
+  if(!normalizedCurrent){
+    list.innerHTML="";
+    return;
+  }
+  const unique=[];
+  const seen=new Set();
+  values.forEach(value=>{
+    const raw=String(value||"").trim();
+    const normalized=normalizeLookupText(raw);
+    if(!raw || !normalized || seen.has(normalized)) return;
+    if(normalized.includes(normalizedCurrent)){
+      seen.add(normalized);
+      unique.push(raw);
+    }
+  });
+  list.innerHTML=unique.slice(0,12).map(value=>`<option value="${escapeHtml(value)}"></option>`).join("");
+}
+
+function handleStudentNameInput(){
+  const name=document.getElementById("studentName").value.trim();
+  const className=document.getElementById("className").value.trim();
+  const schoolName=document.getElementById("schoolName").value.trim();
+  const records=getUniqueStudentRecords().filter(item=>{
+    const schoolOk=!schoolName || normalizeSchoolLookup(item.schoolName)===normalizeSchoolLookup(schoolName);
+    const classOk=!className || normalizeClassLookup(item.className)===normalizeClassLookup(className);
+    return schoolOk && classOk;
+  });
+  updateSuggestionList("studentNameSuggestions", records.map(item=>item.name), name);
+  toggleViewCommentButton();
+}
+
+function handleSchoolNameInput(){
+  const name=document.getElementById("studentName").value.trim();
+  const className=document.getElementById("className").value.trim();
+  const schoolName=document.getElementById("schoolName").value.trim();
+  const records=getUniqueStudentRecords().filter(item=>{
+    const nameOk=!name || normalizeLookupText(item.name)===normalizeLookupText(name);
+    const classOk=!className || normalizeClassLookup(item.className)===normalizeClassLookup(className);
+    return nameOk && classOk;
+  });
+  updateSuggestionList("schoolNameSuggestions", records.map(item=>item.schoolName), schoolName);
+  toggleViewCommentButton();
+}
+
+function hasExactStudentRecord(name,className,schoolName){
+  const targetKey=makeStudentKey(name,className,schoolName);
+  return getAllResults().some(item=>makeStudentKey(item.name,item.className,item.schoolName)===targetKey);
+}
+
+function getExactStudentAttempts(name,className,schoolName){
+  const targetKey=makeStudentKey(name,className,schoolName);
+  return getAllResults().filter(item=>makeStudentKey(item.name,item.className,item.schoolName)===targetKey).sort((a,b)=>{
+    const levelA=Number(a.level)||1;
+    const levelB=Number(b.level)||1;
+    if(levelA!==levelB) return levelA-levelB;
+    return (Number(b.playedAt)||0)-(Number(a.playedAt)||0);
+  });
+}
+
+function getExactStudentLevelSummaries(name,className,schoolName){
+  const attempts=getExactStudentAttempts(name,className,schoolName);
+  const byLevel={};
+  attempts.forEach(item=>{
+    const level=Number(item.level)||1;
+    const existing=byLevel[level];
+    if(!existing || Number(item.playedAt||0) > Number(existing.playedAt||0)){
+      byLevel[level]=item;
+    }
+  });
+  return Object.values(byLevel).sort((a,b)=>(Number(a.level)||1)-(Number(b.level)||1));
+}
+
+function getCommentStore(){
+  return JSON.parse(localStorage.getItem("khkt_comments"))||{};
+}
+
+function setCommentStore(data){
+  localStorage.setItem("khkt_comments",JSON.stringify(data));
+}
+
+function findStudentComment(name,className,schoolName,level){
+  const comments=getCommentStore();
+  if(level!==undefined && level!==null && level!==""){
+    const levelKey=makeStudentLevelKey(name,className,schoolName,level);
+    return comments[levelKey] || "";
+  }
+  const legacyKey=makeStudentKey(name,className,schoolName);
+  return comments[legacyKey] || "";
+}
+
+function getEffectiveCorrectPairs(item){
+  const storedCorrect=Number(item && item.correctPairs)||0;
+  const matchedPairs=Array.isArray(item && item.matchedPairs) ? item.matchedPairs.length : 0;
+  const attemptPairs=Array.isArray(item && item.attemptPairs) ? item.attemptPairs.filter(p=>p && p.status==="correct").length : 0;
+  return Math.max(storedCorrect, matchedPairs, attemptPairs);
+}
+
+function getEffectiveWrongPairs(item){
+  const storedWrong=Number(item && item.wrongPairs)||0;
+  const attemptPairs=Array.isArray(item && item.attemptPairs) ? item.attemptPairs.filter(p=>p && p.status==="wrong").length : 0;
+  return Math.max(storedWrong, attemptPairs);
+}
+
+function getEffectiveScore(item){
+  const correctPairs=getEffectiveCorrectPairs(item);
+  return correctPairs*10;
+}
+
+function normalizeStoredAttempt(item){
+  const normalized=Object.assign({}, item||{});
+  normalized.correctPairs=getEffectiveCorrectPairs(normalized);
+  normalized.wrongPairs=getEffectiveWrongPairs(normalized);
+  normalized.score=getEffectiveScore(normalized);
+  if(!Array.isArray(normalized.matchedPairs)) normalized.matchedPairs=[];
+  if(!Array.isArray(normalized.attemptPairs)) normalized.attemptPairs=[];
+  return normalized;
+}
+
+function getStudentAttempts(name,className,schoolName){
+  const data=JSON.parse(localStorage.getItem("khkt"))||[];
+  const inputName=normalizeLookupText(name);
+  const inputClass=normalizeClassLookup(className);
+  const inputSchool=normalizeSchoolLookup(schoolName);
+
+  const scored=data.map(item=>{
+    const itemName=normalizeLookupText(item.name);
+    const itemClass=normalizeClassLookup(item.className);
+    const itemSchool=normalizeSchoolLookup(item.schoolName);
+
+    let score=0;
+    if(inputName && itemName){
+      if(itemName===inputName) score+=100;
+      else if(isLooseSameStudent(itemName,inputName)) score+=80;
+    }
+    if(inputClass && itemClass){
+      if(itemClass===inputClass) score+=20;
+    }
+    if(inputSchool && itemSchool){
+      if(itemSchool===inputSchool) score+=20;
+      else if(isLooseSameStudent(itemSchool,inputSchool)) score+=15;
+    }
+
+    return {item,score,itemName,itemClass,itemSchool};
+  }).filter(row=>row.score>=80);
+
+  const bestScore=scored.reduce((max,row)=>Math.max(max,row.score),0);
+  let candidates=scored.filter(row=>row.score===bestScore).map(row=>row.item);
+
+  if(candidates.length===0){
+    candidates=data.filter(item=>{
+      const itemName=normalizeLookupText(item.name);
+      return inputName && itemName && isLooseSameStudent(itemName,inputName);
+    });
+  }
+
+  const seen=new Set();
+  const deduped=[];
+  candidates.forEach(item=>{
+    const key=[
+      normalizeLookupText(item.name),
+      normalizeClassLookup(item.className),
+      normalizeSchoolLookup(item.schoolName),
+      Number(item.level)||1,
+      Number(item.playedAt)||0,
+      Number(item.score)||0,
+      Number(item.time)||0,
+      Number(item.correctPairs)||0,
+      Number(item.wrongPairs)||0
+    ].join("|");
+    if(!seen.has(key)){
+      seen.add(key);
+      deduped.push(item);
+    }
+  });
+
+  return deduped.sort((a,b)=>{
+    const levelA=Number(a.level)||1;
+    const levelB=Number(b.level)||1;
+    if(levelA!==levelB) return levelA-levelB;
+    return (Number(b.playedAt)||0)-(Number(a.playedAt)||0);
+  });
+}
+
+function getStudentLevelSummaries(name,className,schoolName){
+  const attempts=getStudentAttempts(name,className,schoolName);
+  const byLevel={};
+  attempts.forEach(item=>{
+    const level=Number(item.level)||1;
+    const existing=byLevel[level];
+    if(!existing || Number(item.playedAt||0) > Number(existing.playedAt||0)){
+      byLevel[level]=item;
+    }
+  });
+  return Object.values(byLevel).sort((a,b)=>(Number(a.level)||1)-(Number(b.level)||1));
+}
+
+function buildUiState(){
+  return {
+    studentName:document.getElementById("studentName").value||"",
+    className:document.getElementById("className").value||"",
+    schoolName:document.getElementById("schoolName").value||"",
+    currentLevel:currentLevel||1,
+    teacherLoggedIn:!!teacherLoggedIn,
+    teacherPanelVisible:document.getElementById("teacherPanel").style.display==="block",
+    studentDetailOpen:!!currentStudentDetailOpen
+  };
+}
+
+function saveUiState(){
+  try{
+    sessionStorage.setItem(APP_STATE_KEY,JSON.stringify(buildUiState()));
+  }catch(e){}
+}
+
+function restoreUiState(){
+  let state=null;
+  try{
+    state=JSON.parse(sessionStorage.getItem(APP_STATE_KEY)||"null");
+  }catch(e){
+    state=null;
+  }
+  if(!state) return;
+
+  document.getElementById("studentName").value=state.studentName||"";
+  document.getElementById("className").value=state.className||"";
+  document.getElementById("schoolName").value=state.schoolName||"";
+
+  const level=Number(state.currentLevel)||1;
+  const btns=document.querySelectorAll(".level-btn");
+  if(btns[level-1]) setLevel(level,btns[level-1]);
+
+  handleStudentNameInput();
+  handleSchoolNameInput();
+  toggleViewCommentButton();
+
+  if(state.teacherLoggedIn || state.teacherPanelVisible){
+    teacherLoggedIn=true;
+    document.getElementById("teacherPanel").style.display="block";
+    renderTeacherPanel();
+  }
+
+  if(state.studentDetailOpen){
+    currentStudentDetailOpen=false;
+    if((state.studentName||"").trim() && (state.className||"").trim() && (state.schoolName||"").trim()){
+      showStudentComment();
+    }
+  }
+}
+
+function bindStateInputs(){
+  ["studentName","className","schoolName"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.addEventListener("input",saveUiState);
+    el.addEventListener("change",saveUiState);
+  });
+}
+
+function toggleViewCommentButton(){
+  const name=document.getElementById("studentName").value.trim();
+  const className=document.getElementById("className").value.trim();
+  const schoolName=document.getElementById("schoolName").value.trim();
+  const btn=document.getElementById("viewCommentBtn");
+  btn.style.display=(name && className && schoolName && hasExactStudentRecord(name,className,schoolName)) ? "inline-block" : "none";
+}
+
+function showStudentComment(){
+  const name=document.getElementById("studentName").value.trim();
+  const className=document.getElementById("className").value.trim();
+  const schoolName=document.getElementById("schoolName").value.trim();
+  const attempts=getExactStudentLevelSummaries(name,className,schoolName);
+
+  if(!name || !className || !schoolName){
+    alert("Vui lòng nhập đầy đủ họ tên, lớp và trường.");
+    return;
+  }
+  if(attempts.length===0){
+    alert("Học sinh này chưa có dữ liệu chơi game.");
+    toggleViewCommentButton();
+    return;
+  }
+
+  document.getElementById("studentCommentInfo").innerHTML=
+    `<b>Học sinh:</b> ${escapeHtml(name)}<br><b>Lớp:</b> ${escapeHtml(className)}<br><b>Trường:</b> ${escapeHtml(schoolName)}`;
+
+  const contentHtml=attempts.map(item=>{
+    const comment=findStudentComment(item.name,item.className,item.schoolName,item.level) || findStudentComment(name,className,schoolName,item.level);
+    return `
+      <div class="level-detail-card">
+        <h4>🎮 Cấp độ ${Number(item.level)||1}</h4>
+        <div><b>Thời gian:</b> ${Number(item.time)||0}${item.timeLimit>0 ? " giây còn lại" : " giây"}</div>
+        <div><b>Số cặp ghép đúng:</b> ${getEffectiveCorrectPairs(item)}</div>
+        <div><b>Số cặp ghép sai:</b> ${getEffectiveWrongPairs(item)}</div>
+        <div><b>Số điểm:</b> ${getEffectiveScore(item)}</div>
+        <div><b>Nhận xét của giáo viên:</b> ${comment ? escapeHtml(comment).replace(/\\n/g,"<br>") : "Chưa có nhận xét"}</div>
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("studentCommentContent").innerHTML=contentHtml || '<div class="level-detail-empty">Chưa có dữ liệu theo cấp độ.</div>';
+  document.getElementById("studentCommentModal").classList.add("show");
+  currentStudentDetailOpen=true;
+  saveUiState();
+}
+
+
+function closeStudentCommentModal(){
+  document.getElementById("studentCommentModal").classList.remove("show");
+  currentStudentDetailOpen=false;
+  saveUiState();
+}
+
+function getLevelConfig(level){
+  return {
+    1:{timeLimit:0,lives:999,preflip:true,previewSeconds:0,mode:"base",wrongCount:2},
+    2:{timeLimit:120,lives:999,preflip:true,previewSeconds:0,mode:"base",wrongCount:4},
+    3:{timeLimit:90,lives:5,preflip:true,previewSeconds:0,mode:"level3",wrongCount:4},
+    4:{timeLimit:60,lives:3,preflip:true,previewSeconds:0,mode:"level4",wrongCount:4},
+    5:{timeLimit:90,lives:999,preflip:false,previewSeconds:5,mode:"level4",wrongCount:4,maxWrongPairs:999},
+    6:{timeLimit:60,lives:5,preflip:false,previewSeconds:5,mode:"level6",wrongCount:4,maxWrongPairs:5},
+    7:{timeLimit:60,lives:3,preflip:false,previewSeconds:3,mode:"level6",wrongCount:4,maxWrongPairs:3}
+  }[level];
+}
+
+function getFireworkColors(level){
+  if(level===1) return ["#ffd700","#fff7ae","#ffffff","#ffec80","#ffe066"];
+  if(level===2) return ["#40a9ff","#69c0ff","#91d5ff","#bae7ff","#ffffff"];
+  if(level===3) return ["#ff4d4f","#ff7875","#ff9c6e","#ffa39e","#ffd8bf"];
+  if(level===4) return ["#eb2f96","#9254de","#13c2c2","#36cfc9","#f759ab","#b37feb"];
+  if(level===5) return ["#f97316","#fb923c","#fdba74","#fed7aa","#fff7ed"];
+  if(level===6) return ["#22c55e","#4ade80","#86efac","#bbf7d0","#f0fdf4"];
+  return ["#a855f7","#c084fc","#d8b4fe","#e9d5ff","#faf5ff"];
+}
+
+function updateLevelLockState(){
+  document.querySelectorAll(".level-btn").forEach(b=>{
+    b.disabled=gameSessionActive;
+  });
+}
+
+function setGameSessionActive(active){
+  gameSessionActive=!!active;
+  updateLevelLockState();
+}
+
+function setLevel(level,btn){
+  if(gameSessionActive && level!==currentLevel){
+    alert("Bạn đang chơi cấp độ hiện tại. Hãy hoàn thành hoặc kết thúc lượt chơi rồi mới chuyển cấp độ khác.");
+    return;
+  }
+  currentLevel=level;
+  const cfg=getLevelConfig(level);
+  timeLimit=cfg.timeLimit;
+  lives=cfg.lives;
+  updateInfoBar();
+  document.querySelectorAll(".level-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+}
+
+function updateInfoBar(){
+  document.getElementById("comboText").innerText=combo;
+  document.getElementById("livesText").innerText=(lives>=999) ? "∞" : lives;
+}
+
+function shuffle(array){
+  for(let i=array.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [array[i],array[j]]=[array[j],array[i]];
+  }
+  return array;
+}
+
+function randomInt(min,max){
+  return Math.floor(Math.random()*(max-min+1))+min;
+}
+
+function sampleOne(arr){
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function uniqueBy(arr,keyFn){
+  const seen=new Set();
+  return arr.filter(item=>{
+    const key=keyFn(item);
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function coeffVar(c,v){ return c===1 ? v : `${c}${v}`; }
+function squareTerm(c,v){ const n=c*c; return `${n===1?"":n}${v}²`; }
+function cubeTerm(c,v){ const n=c*c*c; return `${n===1?"":n}${v}³`; }
+function product2(c,v1,v2){ return `${c===1?"":c}${v1}${v2}`; }
+function product3x2y(c,x,y){ return `${c===1?"":c}${x}²${y}`; }
+function product3xy2(c,x,y){ return `${c===1?"":c}${x}${y}²`; }
+
+function makeGeneratorSet(mode){
+  const level3=mode==="level3";
+  const level4=mode==="level4";
+  const level6=mode==="level6";
+
+  const pairBank=level6
+    ? [["x","y"],["a","b"],["m","n"],["p","q"],["u","v"],["r","s"],["c","d"],["t","z"],["k","h"],["g","f"],["x","z"],["m","p"],["a","t"],["u","h"],["r","y"],["c","m"]]
+    : [["x","y"],["a","b"],["m","n"],["p","q"],["u","v"],["r","s"],["c","d"],["t","z"],["k","h"],["g","f"],["x","z"],["m","p"],["a","t"],["u","h"]];
+
+  const smallMin=level3?1:(level4?2:3);
+  const smallMax=level3?5:(level4?7:9);
+  const cubeMax=level3?4:(level4?5:6);
+  const constMax=level3?8:(level4?12:15);
+
+  const generators=[
+    function(){
+      const [x,y]=sampleOne(pairBank), a=randomInt(smallMin,smallMax), b=randomInt(smallMin,smallMax);
+      const left=`(${coeffVar(a,x)}+${coeffVar(b,y)})²`;
+      const right=`${squareTerm(a,x)}+${product2(2*a*b,x,y)}+${squareTerm(b,y)}`;
+      return {left,right,formula:`${left} = ${right}`,name:"Bình phương của một tổng",
+      wrongs:[`${squareTerm(a,x)}+${product2(3*a*b,x,y)}+${squareTerm(b,y)}`,`${squareTerm(a,x)}-${product2(2*a*b,x,y)}+${squareTerm(b,y)}`]};
+    },
+    function(){
+      const [x,y]=sampleOne(pairBank), a=randomInt(smallMin,smallMax), b=randomInt(smallMin,smallMax);
+      const left=`(${coeffVar(a,x)}-${coeffVar(b,y)})²`;
+      const right=`${squareTerm(a,x)}-${product2(2*a*b,x,y)}+${squareTerm(b,y)}`;
+      return {left,right,formula:`${left} = ${right}`,name:"Bình phương của một hiệu",
+      wrongs:[`${squareTerm(a,x)}-${product2(3*a*b,x,y)}+${squareTerm(b,y)}`,`${squareTerm(a,x)}+${product2(2*a*b,x,y)}+${squareTerm(b,y)}`]};
+    },
+    function(){
+      const [x,y]=sampleOne(pairBank), a=randomInt(smallMin,smallMax+1), b=randomInt(smallMin,smallMax+1);
+      const left=`${squareTerm(a,x)}-${squareTerm(b,y)}`;
+      const right=`(${coeffVar(a,x)}-${coeffVar(b,y)})(${coeffVar(a,x)}+${coeffVar(b,y)})`;
+      return {left,right,formula:`${left} = ${right}`,name:"Hiệu hai bình phương",
+      wrongs:[`(${coeffVar(a,x)}+${coeffVar(b,y)})(${coeffVar(a,x)}+${coeffVar(b,y)})`,`(${coeffVar(a,x)}-${coeffVar(b,y)})(${coeffVar(a,x)}-${coeffVar(b,y)})`]};
+    },
+    function(){
+      const [x,y]=sampleOne(pairBank), a=randomInt(1,cubeMax), b=randomInt(1,cubeMax);
+      const left=`(${coeffVar(a,x)}+${coeffVar(b,y)})³`;
+      const right=`${cubeTerm(a,x)}+${product3x2y(3*a*a*b,x,y)}+${product3xy2(3*a*b*b,x,y)}+${cubeTerm(b,y)}`;
+      return {left,right,formula:`${left} = ${right}`,name:"Lập phương của một tổng",
+      wrongs:[`${cubeTerm(a,x)}+${product3x2y(2*a*a*b,x,y)}+${product3xy2(3*a*b*b,x,y)}+${cubeTerm(b,y)}`,`${cubeTerm(a,x)}+${product3x2y(3*a*a*b,x,y)}+${product3xy2(2*a*b*b,x,y)}+${cubeTerm(b,y)}`]};
+    },
+    function(){
+      const [x,y]=sampleOne(pairBank), a=randomInt(1,cubeMax), b=randomInt(1,cubeMax);
+      const left=`(${coeffVar(a,x)}-${coeffVar(b,y)})³`;
+      const right=`${cubeTerm(a,x)}-${product3x2y(3*a*a*b,x,y)}+${product3xy2(3*a*b*b,x,y)}-${cubeTerm(b,y)}`;
+      return {left,right,formula:`${left} = ${right}`,name:"Lập phương của một hiệu",
+      wrongs:[`${cubeTerm(a,x)}-${product3x2y(2*a*a*b,x,y)}+${product3xy2(3*a*b*b,x,y)}-${cubeTerm(b,y)}`,`${cubeTerm(a,x)}-${product3x2y(3*a*a*b,x,y)}-${product3xy2(3*a*b*b,x,y)}-${cubeTerm(b,y)}`]};
+    },
+    function(){
+      const [x,y]=sampleOne(pairBank), a=randomInt(1,cubeMax), b=randomInt(1,cubeMax);
+      const left=`${cubeTerm(a,x)}+${cubeTerm(b,y)}`;
+      const right=`(${coeffVar(a,x)}+${coeffVar(b,y)})(${squareTerm(a,x)}-${product2(a*b,x,y)}+${squareTerm(b,y)})`;
+      return {left,right,formula:`${left} = ${right}`,name:"Tổng hai lập phương",
+      wrongs:[`(${coeffVar(a,x)}+${coeffVar(b,y)})(${squareTerm(a,x)}+${product2(a*b,x,y)}+${squareTerm(b,y)})`,`(${coeffVar(a,x)}-${coeffVar(b,y)})(${squareTerm(a,x)}-${product2(a*b,x,y)}+${squareTerm(b,y)})`]};
+    },
+    function(){
+      const [x,y]=sampleOne(pairBank), a=randomInt(1,cubeMax), b=randomInt(1,cubeMax);
+      const left=`${cubeTerm(a,x)}-${cubeTerm(b,y)}`;
+      const right=`(${coeffVar(a,x)}-${coeffVar(b,y)})(${squareTerm(a,x)}+${product2(a*b,x,y)}+${squareTerm(b,y)})`;
+      return {left,right,formula:`${left} = ${right}`,name:"Hiệu hai lập phương",
+      wrongs:[`(${coeffVar(a,x)}-${coeffVar(b,y)})(${squareTerm(a,x)}-${product2(a*b,x,y)}+${squareTerm(b,y)})`,`(${coeffVar(a,x)}+${coeffVar(b,y)})(${squareTerm(a,x)}+${product2(a*b,x,y)}+${squareTerm(b,y)})`]};
+    },
+    function(){
+      const x=sampleOne(["x","a","m","p","t","k","u","r","z","h"]), a=randomInt(smallMin,smallMax), b=randomInt(1,constMax);
+      const left=`(${coeffVar(a,x)}+${b})²`;
+      const right=`${squareTerm(a,x)}+${2*a*b}${x}+${b*b}`;
+      return {left,right,formula:`${left} = ${right}`,name:"Bình phương của một tổng",
+      wrongs:[`${squareTerm(a,x)}+${a*b}${x}+${b*b}`,`${squareTerm(a,x)}-${2*a*b}${x}+${b*b}`]};
+    },
+    function(){
+      const x=sampleOne(["x","a","m","p","t","k","u","r","z","h"]), a=randomInt(smallMin,smallMax), b=randomInt(1,constMax);
+      const left=`(${coeffVar(a,x)}-${b})²`;
+      const right=`${squareTerm(a,x)}-${2*a*b}${x}+${b*b}`;
+      return {left,right,formula:`${left} = ${right}`,name:"Bình phương của một hiệu",
+      wrongs:[`${squareTerm(a,x)}-${a*b}${x}+${b*b}`,`${squareTerm(a,x)}+${2*a*b}${x}+${b*b}`]};
+    },
+    function(){
+      const x=sampleOne(["x","a","m","p","t","k","u","r","z","h"]), a=randomInt(1,level6?4:3), b=randomInt(1,level6?7:6);
+      const left=`(${coeffVar(a,x)}+${b})³`;
+      const right=`${cubeTerm(a,x)}+${3*a*a*b}${x}²+${3*a*b*b}${x}+${b*b*b}`;
+      return {left,right,formula:`${left} = ${right}`,name:"Lập phương của một tổng",
+      wrongs:[`${cubeTerm(a,x)}+${2*a*a*b}${x}²+${3*a*b*b}${x}+${b*b*b}`,`${cubeTerm(a,x)}+${3*a*a*b}${x}²+${2*a*b*b}${x}+${b*b*b}`]};
+    },
+    function(){
+      const x=sampleOne(["x","a","m","p","t","k","u","r","z","h"]), a=randomInt(1,level6?4:3), b=randomInt(1,level6?7:6);
+      const left=`(${coeffVar(a,x)}-${b})³`;
+      const right=`${cubeTerm(a,x)}-${3*a*a*b}${x}²+${3*a*b*b}${x}-${b*b*b}`;
+      return {left,right,formula:`${left} = ${right}`,name:"Lập phương của một hiệu",
+      wrongs:[`${cubeTerm(a,x)}-${2*a*a*b}${x}²+${3*a*b*b}${x}-${b*b*b}`,`${cubeTerm(a,x)}-${3*a*a*b}${x}²-${3*a*b*b}${x}-${b*b*b}`]};
+    },
+    function(){
+      const x=sampleOne(["x","a","m","p","t","k","u","r","z","h"]), a=randomInt(level6?3:2,level6?8:6), b=randomInt(level6?3:2,level6?8:6);
+      const left=`${squareTerm(a,x)}-${b*b}`;
+      const right=`(${coeffVar(a,x)}-${b})(${coeffVar(a,x)}+${b})`;
+      return {left,right,formula:`${left} = ${right}`,name:"Hiệu hai bình phương",
+      wrongs:[`(${coeffVar(a,x)}+${b})(${coeffVar(a,x)}+${b})`,`(${coeffVar(a,x)}-${b})(${coeffVar(a,x)}-${b})`]};
+    }
+  ];
+
+  if(level6){
+    generators.push(
+      function(){
+        const [x,y]=sampleOne(pairBank), a=randomInt(2,8), b=randomInt(2,8);
+        const left=`${cubeTerm(a,x)}+${cubeTerm(b,y)}`;
+        const right=`(${coeffVar(a,x)}+${coeffVar(b,y)})(${squareTerm(a,x)}-${product2(a*b,x,y)}+${squareTerm(b,y)})`;
+        return {left,right,formula:`${left} = ${right}`,name:"Tổng hai lập phương",
+        wrongs:[`(${coeffVar(a,x)}+${coeffVar(b,y)})(${squareTerm(a,x)}+${product2(a*b,x,y)}+${squareTerm(b,y)})`,`(${coeffVar(a,x)}-${coeffVar(b,y)})(${squareTerm(a,x)}-${product2(a*b,x,y)}+${squareTerm(b,y)})`]};
+      },
+      function(){
+        const [x,y]=sampleOne(pairBank), a=randomInt(2,8), b=randomInt(2,8);
+        const left=`${cubeTerm(a,x)}-${cubeTerm(b,y)}`;
+        const right=`(${coeffVar(a,x)}-${coeffVar(b,y)})(${squareTerm(a,x)}+${product2(a*b,x,y)}+${squareTerm(b,y)})`;
+        return {left,right,formula:`${left} = ${right}`,name:"Hiệu hai lập phương",
+        wrongs:[`(${coeffVar(a,x)}-${coeffVar(b,y)})(${squareTerm(a,x)}-${product2(a*b,x,y)}+${squareTerm(b,y)})`,`(${coeffVar(a,x)}+${coeffVar(b,y)})(${squareTerm(a,x)}+${product2(a*b,x,y)}+${squareTerm(b,y)})`]};
+      }
+    );
+  }
+  return generators;
+}
+
+function generateDynamicContent(mode){
+  const generators=shuffle(makeGeneratorSet(mode));
+  const chosenPairs=[];
+  const wrongPool=[];
+  const usedTexts=new Set();
+
+  for(let i=0;i<generators.length && chosenPairs.length<8;i++){
+    let tries=0;
+    while(tries<25){
+      tries++;
+      const item=generators[i]();
+      if(!item) continue;
+      if(usedTexts.has(item.left) || usedTexts.has(item.right)) continue;
+      chosenPairs.push([item.left,item.right,item.formula,item.name]);
+      usedTexts.add(item.left);
+      usedTexts.add(item.right);
+      (item.wrongs||[]).forEach(w=>{
+        if(!usedTexts.has(w)) wrongPool.push(w);
+      });
+      break;
+    }
+  }
+
+  const extraWrongs=mode==="level6"
+    ? ["25x²+60xy+36y²","(4a+b)(16a²+4ab+b²)","27m³-54m²n+9mn²-n³","(3p-q)(9p²-3pq+q²)","49u²-25v²","(7u-5v)(7u-5v)","8x³+36x²+54x+27","(2r+s)(4r²-2rs-s²)"]
+    : ["4x²+24xy+9y²","(3a+b)(3a-b)","x³+3x²+12x+8","8m³-6m²n+6mn²-n³","(3p+q)(9p²+3pq+q²)","(2u-v)(4u²-2uv+v²)","64x³-1","(4x-1)(16x²+4x+1)"];
+
+  const finalWrongs=uniqueBy(shuffle([...wrongPool,...extraWrongs]),x=>x).filter(x=>!usedTexts.has(x));
+  return {pairs:chosenPairs,wrongs:finalWrongs};
+}
+
+function generateLevel3Content(){
+  const result=generateDynamicContent("level3");
+  currentLevel3Pairs=result.pairs;
+  currentLevel3WrongTemplates=result.wrongs;
+}
+function generateLevel4Content(){
+  const result=generateDynamicContent("level4");
+  currentLevel4Pairs=result.pairs;
+  currentLevel4WrongTemplates=result.wrongs;
+}
+function generateLevel6Content(){
+  const result=generateDynamicContent("level6");
+  currentLevel6Pairs=result.pairs;
+  currentLevel6WrongTemplates=result.wrongs;
+}
+
+function getCurrentPairs(){
+  if(currentLevel===3) return currentLevel3Pairs;
+  if(currentLevel===4 || currentLevel===5) return currentLevel4Pairs;
+  if(currentLevel===6 || currentLevel===7) return currentLevel6Pairs;
+  return basePairs;
+}
+
+function getCurrentWrongTemplates(){
+  if(currentLevel===3) return currentLevel3WrongTemplates;
+  if(currentLevel===4 || currentLevel===5) return currentLevel4WrongTemplates;
+  if(currentLevel===6 || currentLevel===7) return currentLevel6WrongTemplates;
+  return defaultWrongTemplates;
+}
+
+function getCurrentTargetCount(){
+  return getCurrentPairs().length;
+}
+
+function getAllCardElements(){
+  return Array.from(document.querySelectorAll(".card"));
+}
+
+function clearCardTimer(el){
+  const t=cardTimers.get(el);
+  if(!t) return;
+  clearTimeout(t.timeoutId);
+  clearInterval(t.intervalId);
+  cardTimers.delete(el);
+  setCardCountdown(el,null,false);
+}
+
+function clearAllCardTimers(){
+  getAllCardElements().forEach(el=>clearCardTimer(el));
+}
+
+function setCardCountdown(el,value,show){
+  const badge=el.querySelector(".countdown-badge");
+  if(!badge) return;
+  if(show){
+    badge.textContent=String(value);
+    badge.classList.add("show");
+  }else{
+    badge.textContent="";
+    badge.classList.remove("show");
+  }
+}
+
+function startCardCountdown(el,seconds,onExpire){
+  clearCardTimer(el);
+  let remaining=seconds;
+  setCardCountdown(el,remaining,true);
+
+  const intervalId=setInterval(()=>{
+    remaining--;
+    if(remaining>0){
+      setCardCountdown(el,remaining,true);
+    }
+  },1000);
+
+  const timeoutId=setTimeout(()=>{
+    clearInterval(intervalId);
+    cardTimers.delete(el);
+    setCardCountdown(el,null,false);
+    onExpire();
+  },seconds*1000);
+
+  cardTimers.set(el,{intervalId,timeoutId});
+}
+
+function generateUniqueWrongCards(correctTexts,count){
+  const pool=shuffle([...getCurrentWrongTemplates()]);
+  const chosen=[];
+  const used=new Set(correctTexts);
+  for(const text of pool){
+    if(!used.has(text)){
+      chosen.push(text);
+      used.add(text);
+    }
+    if(chosen.length===count) break;
+  }
+  return chosen;
+}
+
+function buildCards(){
+  const newCards=[];
+  const activePairs=getCurrentPairs();
+  const cfg=getLevelConfig(currentLevel);
+
+  activePairs.forEach((p,i)=>{
+    newCards.push({text:p[0],id:i,formula:p[2],name:p[3],type:"correct"});
+    newCards.push({text:p[1],id:i,formula:p[2],name:p[3],type:"correct"});
+  });
+
+  const correctTexts=newCards.map(c=>c.text);
+  const wrongs=generateUniqueWrongCards(correctTexts,cfg.wrongCount);
+  wrongs.forEach((w,i)=>{
+    newCards.push({text:w,id:100+i,formula:"",name:"",type:"wrong"});
+  });
+
+  shuffle(newCards);
+  return newCards;
+}
+
+function resetGameState(){
+  selected=[];
+  scoreValue=0;
+  correctCount=0;
+  wrongPairCount=0;
+  currentMatchedPairs=[];
+  currentAttemptPairs=[];
+  lockBoard=false;
+  combo=0;
+  celebrationDone=false;
+  attemptSaved=false;
+  setGameSessionActive(false);
+  clearAllCardTimers();
+
+  const cfg=getLevelConfig(currentLevel);
+  timeLimit=cfg.timeLimit;
+  lives=cfg.lives;
+
+  document.getElementById("scoreText").innerText="0";
+  document.getElementById("comboText").innerText="0";
+  updateInfoBar();
+  document.getElementById("time").innerText=(timeLimit>0 ? timeLimit : 0);
+  document.getElementById("formulaBox").innerText="📘 Hằng đẳng thức sẽ hiển thị tại đây";
+  document.getElementById("finishBox").style.display="none";
+  document.getElementById("finishBox").innerHTML="";
+  hideCelebration();
+  clearInterval(timer);
+  updateInfoBar();
+}
+
+function saveAttempt(completed,statusText){
+  if(attemptSaved) return;
+  attemptSaved=true;
+
+  const name=document.getElementById("studentName").value.trim();
+  const className=document.getElementById("className").value.trim();
+  const schoolName=document.getElementById("schoolName").value.trim();
+  const timeValue=parseInt(document.getElementById("time").innerText,10)||0;
+
+  let data=JSON.parse(localStorage.getItem("khkt"))||[];
+  const safeCorrectPairs=Math.max(correctCount, currentMatchedPairs.length, currentAttemptPairs.filter(p=>p && p.status==="correct").length);
+  const safeWrongPairs=Math.max(wrongPairCount, currentAttemptPairs.filter(p=>p && p.status==="wrong").length);
+  const safeScore=safeCorrectPairs*10;
+  const attemptPayload={
+    name,className,schoolName,
+    score:safeScore,
+    time:timeValue,
+    level:currentLevel,
+    completed,statusText,
+    correctPairs:safeCorrectPairs,
+    wrongPairs:safeWrongPairs,
+    totalPairs:getCurrentPairs().length,
+    livesLeft:lives,
+    maxCombo:combo,
+    timeLimit:timeLimit,
+    matchedPairs:currentMatchedPairs.slice(),
+    attemptPairs:currentAttemptPairs.slice(),
+    playedAt:Date.now()
+  };
+
+  data.push(attemptPayload);
+  localStorage.setItem("khkt",JSON.stringify(data));
+  toggleViewCommentButton();
+  saveResultToServer(attemptPayload);
+}
+
+function startGame(){
+  unlockAudio();
+
+  const name=document.getElementById("studentName").value.trim();
+  const className=document.getElementById("className").value.trim();
+  const schoolName=document.getElementById("schoolName").value.trim();
+
+  if(!name){
+    alert("Nhập tên học sinh");
+    return;
+  }
+
+  resetGameState();
+
+  if(currentLevel===3) generateLevel3Content();
+  if(currentLevel===4 || currentLevel===5) generateLevel4Content();
+  if(currentLevel===6 || currentLevel===7) generateLevel6Content();
+
+  cards=buildCards();
+
+  let show=name;
+  if(className) show+=" - Lớp "+className;
+  if(schoolName) show+=" - "+schoolName;
+  document.getElementById("showName").innerText=show;
+
+  startTime=Date.now();
+  setGameSessionActive(true);
+
+  timer=setInterval(()=>{
+    let t;
+    if(timeLimit>0){
+      t=timeLimit - Math.floor((Date.now()-startTime)/1000);
+      if(t<=0){
+        document.getElementById("time").innerText=0;
+        clearInterval(timer);
+        clearAllCardTimers();
+        lockBoard=true;
+        setGameSessionActive(false);
+        saveAttempt(false,"Hết giờ");
+        alert("⏰ Hết giờ!");
+        document.getElementById("formulaBox").innerText="❌ Bạn đã hết thời gian.";
+        return;
+      }
+    }else{
+      t=Math.floor((Date.now()-startTime)/1000);
+    }
+    document.getElementById("time").innerText=t;
+  },1000);
+
+  createBoard();
+  toggleViewCommentButton();
+}
+
+function createCardElement(card){
+  const wrap=document.createElement("div");
+  wrap.className="card-wrap";
+
+  const div=document.createElement("div");
+  div.className="card";
+
+  const cfg=getLevelConfig(currentLevel);
+  if(cfg.preflip){
+    div.classList.add("flipped");
+  }
+
+  div.innerHTML=`
+    <div class="card-face card-front">?</div>
+    <div class="card-face card-back">
+      <div class="countdown-badge"></div>
+      <span class="card-content">${card.text}</span>
+    </div>
+  `;
+
+  wrap.appendChild(div);
+  wrap.onmouseenter=()=>{
+    safePlay(clickSound);
+    if(div.classList.contains("correct") || div.classList.contains("selected")) return;
+
+    if(currentLevel===5){
+      flipCardOpen(div);
+      return;
+    }
+
+    if(currentLevel===6 || currentLevel===7){
+      flipCardOpen(div);
+      startCardCountdown(div,cfg.previewSeconds,()=>{
+        if(div.classList.contains("correct") || div.classList.contains("selected")) return;
+        div.classList.remove("wrong");
+        flipCardClose(div);
+      });
+    }
+  };
+  wrap.onmouseleave=()=>{
+    if(currentLevel===5 || currentLevel===6 || currentLevel===7){
+      clearCardTimer(div);
+      if(!div.classList.contains("correct") && !div.classList.contains("selected")){
+        div.classList.remove("wrong");
+        flipCardClose(div);
+      }
+    }
+  };
+  wrap.onclick=()=>selectCard(div,card);
+
+  return wrap;
+}
+
+function createBoard(){
+  const gameBoard=document.getElementById("gameBoard");
+  gameBoard.innerHTML="";
+  let tempRow=[];
+
+  cards.forEach((card,index)=>{
+    tempRow.push(card);
+    if(tempRow.length===4 || index===cards.length-1){
+      if(tempRow.length===2){
+        const rowDiv=document.createElement("div");
+        rowDiv.className="center-last-row";
+        tempRow.forEach(rowCard=>rowDiv.appendChild(createCardElement(rowCard)));
+        gameBoard.appendChild(rowDiv);
+      }else{
+        tempRow.forEach(rowCard=>gameBoard.appendChild(createCardElement(rowCard)));
+      }
+      tempRow=[];
+    }
+  });
+}
+
+function flipCardOpen(el){ el.classList.add("flipped"); }
+function flipCardClose(el){ el.classList.remove("flipped"); }
+function removeFromSelected(el){ selected=selected.filter(item=>item.el!==el); }
+
+function finishLoseByLives(){
+  clearInterval(timer);
+  clearAllCardTimers();
+  lockBoard=true;
+  setGameSessionActive(false);
+  saveAttempt(false,"Hết mạng");
+  document.getElementById("formulaBox").innerText="💀 Bạn đã hết mạng.";
+  alert("💀 Bạn đã hết mạng. Trò chơi kết thúc!");
+}
+
+function pauseGameByWrongLimit(limit){
+  clearInterval(timer);
+  clearAllCardTimers();
+  lockBoard=true;
+  document.getElementById("formulaBox").innerText=`⛔ Bạn đã ghép sai quá ${limit} lần. Trò chơi đang tạm dừng.`;
+  alert(`⛔ Bạn đã ghép sai quá ${limit} lần. Trò chơi tạm dừng!`);
+}
+
+function handleCorrectMatch(a,b){
+  safePlay(clapSound);
+  clearCardTimer(a.el);
+  clearCardTimer(b.el);
+
+  a.el.classList.remove("selected");
+  b.el.classList.remove("selected");
+  a.el.classList.add("correct");
+  b.el.classList.add("correct");
+
+  document.getElementById("formulaBox").innerHTML=
+    `✅ <span style="font-weight:bold">${a.card.name}:</span> ${a.card.formula}`;
+
+  combo++;
+  const pairRecord={
+    level:currentLevel,
+    left:a.card.text,
+    right:b.card.text,
+    formula:a.card.formula,
+    name:a.card.name,
+    status:"correct",
+    formulaLine:`${a.card.text} = ${b.card.text}`
+  };
+  currentMatchedPairs.push(pairRecord);
+  currentAttemptPairs.push(pairRecord);
+
+  correctCount++;
+  scoreValue=correctCount*10;
+  document.getElementById("scoreText").innerText=scoreValue;
+  document.getElementById("comboText").innerText=combo;
+
+  selected=[];
+  lockBoard=false;
+
+  setTimeout(()=>checkFinish(),250);
+}
+
+function handleWrongMatch(a,b){
+  safePlay(wrongSound);
+  const cfg=getLevelConfig(currentLevel);
+
+  a.el.classList.add("wrong");
+  b.el.classList.add("wrong");
+
+  combo=0;
+  wrongPairCount++;
+  currentAttemptPairs.push({
+    level:currentLevel,
+    left:a.card.text,
+    right:b.card.text,
+    formula:"",
+    name:"",
+    status:"wrong",
+    formulaLine:`${a.card.text} ≠ ${b.card.text}`
+  });
+  document.getElementById("comboText").innerText=combo;
+
+  if(currentLevel===3 || currentLevel===4){
+    lives--;
+    updateInfoBar();
+  }
+
+  if(currentLevel===6 || currentLevel===7){
+    lives=Math.max(0,cfg.maxWrongPairs-wrongPairCount);
+    updateInfoBar();
+  }
+
+  if(cfg.preflip){
+    setTimeout(()=>{
+      a.el.classList.remove("wrong","selected");
+      b.el.classList.remove("wrong","selected");
+      selected=[];
+      lockBoard=false;
+      if((currentLevel===3 || currentLevel===4 || currentLevel===7) && lives<=0){
+        finishLoseByLives();
+      }
+    },650);
+    return;
+  }
+
+  setTimeout(()=>{
+    clearCardTimer(a.el);
+    clearCardTimer(b.el);
+
+    a.el.classList.remove("wrong","selected");
+    b.el.classList.remove("wrong","selected");
+
+    if(!a.el.classList.contains("correct")) flipCardClose(a.el);
+    if(!b.el.classList.contains("correct")) flipCardClose(b.el);
+
+    selected=[];
+    lockBoard=false;
+
+    if((currentLevel===6 || currentLevel===7) && wrongPairCount>=cfg.maxWrongPairs){
+      pauseGameByWrongLimit(cfg.maxWrongPairs);
+      return;
+    }
+
+    if(currentLevel===7 && lives<=0){
+      finishLoseByLives();
+    }
+  },400);
+}
+
+function selectCard(el,card){
+  if(lockBoard) return;
+  if(el.classList.contains("correct")) return;
+
+  const cfg=getLevelConfig(currentLevel);
+  const selectedIndex=selected.findIndex(item=>item.el===el);
+
+  if(selectedIndex!==-1){
+    if(selected.length===1){
+      clearCardTimer(el);
+      el.classList.remove("selected");
+      if(!cfg.preflip) flipCardClose(el);
+      selected=[];
+    }
+    return;
+  }
+
+  if(selected.length>=2) return;
+
+  el.classList.add("selected");
+  flipCardOpen(el);
+
+  const currentItem={el,card};
+  selected.push(currentItem);
+
+  if(!cfg.preflip){
+    startCardCountdown(el,cfg.previewSeconds,()=>{
+      const exists=selected.some(s=>s.el===el);
+      if(!exists) return;
+      el.classList.remove("selected","wrong");
+      if(!el.classList.contains("correct")){
+        flipCardClose(el);
+      }
+      removeFromSelected(el);
+      lockBoard=false;
+    });
+  }
+
+  if(selected.length===2){
+    lockBoard=true;
+    const a=selected[0];
+    const b=selected[1];
+
+    clearCardTimer(a.el);
+    clearCardTimer(b.el);
+
+    if(a.card.id===b.card.id && a.card.type==="correct" && b.card.type==="correct"){
+      handleCorrectMatch(a,b);
+    }else{
+      handleWrongMatch(a,b);
+    }
+  }
+}
+
+function launchCelebration(){
+  const overlay=document.getElementById("celebrationOverlay");
+  const msg=document.getElementById("celebrationMessage");
+  const colors=getFireworkColors(currentLevel);
+
+  msg.innerText=`🎉 Chúc mừng bạn đã hoàn thành cấp độ ${currentLevel}! 🎉`;
+  msg.style.borderColor=colors[0];
+  msg.style.boxShadow=`0 0 18px ${colors[0]}`;
+  msg.style.color=colors[1] || colors[0];
+
+  overlay.innerHTML="";
+  overlay.appendChild(msg);
+  overlay.classList.add("show");
+
+  for(let i=0;i<140;i++){
+    const piece=document.createElement("div");
+    piece.className="confetti";
+    piece.style.left=Math.random()*100+"vw";
+    piece.style.background=colors[Math.floor(Math.random()*colors.length)];
+    piece.style.animationDuration=(2.8+Math.random()*2.2)+"s";
+    piece.style.animationDelay=(Math.random()*0.5)+"s";
+    piece.style.transform=`rotate(${Math.random()*360}deg)`;
+    overlay.appendChild(piece);
+  }
+
+  setTimeout(()=>hideCelebration(),3200);
+}
+
+function hideCelebration(){
+  const overlay=document.getElementById("celebrationOverlay");
+  overlay.classList.remove("show");
+  const msg=document.getElementById("celebrationMessage");
+  overlay.innerHTML="";
+  overlay.appendChild(msg);
+}
+
+function checkFinish(){
+  const activePairs=getCurrentPairs();
+  if(correctCount===getCurrentTargetCount()){
+    clearInterval(timer);
+    clearAllCardTimers();
+    setGameSessionActive(false);
+
+    if(!celebrationDone){
+      celebrationDone=true;
+      launchCelebration();
+    }
+
+    const finishBox=document.getElementById("finishBox");
+    finishBox.style.display="block";
+    finishBox.innerHTML=`
+      <h2>🎉 HOÀN THÀNH BÀI HỌC</h2>
+      <p><b>${document.getElementById("showName").innerText}</b></p>
+      <p>⭐ ${scoreValue}</p>
+      <p>⏱ ${document.getElementById("time").innerText}${timeLimit>0 ? "s còn lại" : "s"}</p>
+      <p>🎮 Cấp độ: ${currentLevel}</p>
+      <h3>📘 ${activePairs.length} HẰNG ĐẲNG THỨC</h3>
+      ${activePairs.map(p=>`
+        <div class="formula-item">
+          <span class="formula-name">${p[3]}:</span> ${p[2]}
+        </div>
+      `).join("")}
+    `;
+    saveAttempt(true,"Hoàn thành");
+  }
+}
+
+function openLessonModal(index){
+  const data=JSON.parse(localStorage.getItem("khkt"))||[];
+  const student=normalizeStoredAttempt(data[index]);
+  if(!student) return;
+
+  document.getElementById("lessonStudentInfo").innerHTML=
+    `<b>Học sinh:</b> ${escapeHtml(student.name||"---")}<br>
+    <b>Lớp:</b> ${escapeHtml(student.className||"---")}<br>
+    <b>Trường:</b> ${escapeHtml(student.schoolName||"---")}<br>
+    <b>Cấp độ:</b> ${student.level||1} | <b>Điểm:</b> ${getEffectiveScore(student)} | <b>Thời gian:</b> ${student.time||0}${student.timeLimit>0 ? " giây còn lại" : " giây"}`;
+
+  const attemptPairs=Array.isArray(student.attemptPairs) && student.attemptPairs.length
+    ? student.attemptPairs
+    : (Array.isArray(student.matchedPairs) ? student.matchedPairs.map(pair=>Object.assign({},pair,{status:"correct"})) : []);
+
+  const correctPairs=attemptPairs.filter(pair=>pair && pair.status==="correct");
+  const wrongPairs=attemptPairs.filter(pair=>pair && pair.status==="wrong");
+
+  const correctHtml=correctPairs.length
+    ? correctPairs.map((pair,idx)=>`<div class="lesson-pair-item correct">${idx+1}. ${escapeHtml(pair.formulaLine || `${pair.left} = ${pair.right}`)}</div>`).join("")
+    : '<div class="lesson-pair-item">Chưa có cặp ghép đúng.</div>';
+
+  const wrongHtml=wrongPairs.length
+    ? wrongPairs.map((pair,idx)=>`<div class="lesson-pair-item wrong">${idx+1}. ${escapeHtml(pair.formulaLine || `${pair.left} ≠ ${pair.right}`)}</div>`).join("")
+    : '<div class="lesson-pair-item">Chưa có cặp ghép sai.</div>';
+
+  document.getElementById("lessonContent").innerHTML=`
+    <div class="lesson-level-block">
+      <h4>🎮 Cấp độ ${Number(student.level)||1}</h4>
+      <div><b>Số cặp ghép đúng:</b> ${getEffectiveCorrectPairs(student)}</div>
+      <div><b>Số cặp ghép sai:</b> ${getEffectiveWrongPairs(student)}</div>
+      <div><b>Số điểm:</b> ${getEffectiveScore(student)}</div>
+      <div class="lesson-section-title correct-title">✅ Các cặp ghép đúng</div>
+      ${correctHtml}
+      <div class="lesson-section-title wrong-title">❌ Các cặp ghép chưa đúng</div>
+      ${wrongHtml}
+    </div>
+  `;
+  document.getElementById("lessonModal").classList.add("show");
+}
+
+function closeLessonModal(){
+  document.getElementById("lessonModal").classList.remove("show");
+}
+
+function openTeacherLogin(){
+  document.getElementById("teacherUser").value="";
+  document.getElementById("teacherPass").value="";
+  document.getElementById("loginError").innerText="";
+  document.getElementById("loginModal").classList.add("show");
+  saveUiState();
+  setTimeout(()=>document.getElementById("teacherUser").focus(),50);
+}
+function closeTeacherLogin(){
+  document.getElementById("loginModal").classList.remove("show");
+  saveUiState();
+}
+async function teacherLogin(){
+  const u=document.getElementById("teacherUser").value.trim();
+  const p=document.getElementById("teacherPass").value.trim();
+  if(u==="teacher" && p==="123456"){
+    teacherLoggedIn=true;
+    closeTeacherLogin();
+    document.getElementById("teacherPanel").style.display="block";
+    await syncResultsFromServer();
+    renderTeacherPanel();
+    saveUiState();
+  }else{
+    document.getElementById("loginError").innerText="Sai tài khoản hoặc mật khẩu";
+  }
+}
+
+function openCommentModal(index){
+  const data=JSON.parse(localStorage.getItem("khkt"))||[];
+  const student=data[index];
+  if(!student) return;
+
+  activeCommentKey=makeStudentLevelKey(student.name,student.className,student.schoolName,student.level);
+
+  document.getElementById("commentStudentInfo").innerHTML=
+    `<b>Học sinh:</b> ${escapeHtml(student.name||"---")}<br>
+    <b>Lớp:</b> ${escapeHtml(student.className||"---")}<br>
+    <b>Trường:</b> ${escapeHtml(student.schoolName||"---")}<br>
+    <b>Điểm:</b> ${student.score||0} | <b>Thời gian:</b> ${student.time||0}${student.timeLimit>0 ? " giây còn lại" : " giây"} | <b>Cấp độ:</b> ${student.level||1}<br>
+    <b>Số cặp đúng:</b> ${student.correctPairs||0}/${student.totalPairs||0} | <b>Mạng còn lại:</b> ${student.livesLeft>=999 ? "∞" : (student.livesLeft||0)} | <b>Combo cao nhất:</b> ${student.maxCombo||0}<br>
+    <b>Kết quả:</b> ${student.completed ? "✅ Hoàn thành" : `❌ ${escapeHtml(student.statusText||"Chưa đúng")}`}`;
+
+  document.getElementById("teacherCommentText").value=findStudentComment(student.name,student.className,student.schoolName,student.level);
+  document.getElementById("commentModal").classList.add("show");
+  setTimeout(()=>document.getElementById("teacherCommentText").focus(),50);
+}
+
+function closeCommentModal(){
+  document.getElementById("commentModal").classList.remove("show");
+  activeCommentKey="";
+}
+
+function saveTeacherComment(){
+  if(!activeCommentKey) return;
+  const text=document.getElementById("teacherCommentText").value.trim();
+  const comments=getCommentStore();
+
+  if(text){
+    comments[activeCommentKey]=text;
+  }else{
+    delete comments[activeCommentKey];
+  }
+
+  setCommentStore(comments);
+  closeCommentModal();
+  renderTeacherPanel();
+  toggleViewCommentButton();
+  alert("Đã lưu nhận xét.");
+}
+
+async function renderTeacherPanel(){
+  if(teacherLoggedIn){
+    await syncResultsFromServer();
+  }
+  const data=JSON.parse(localStorage.getItem("khkt"))||[];
+  const normalizedData=data.map(item=>normalizeStoredAttempt(item));
+  const resultList=document.getElementById("resultList");
+
+  if(normalizedData.length===0){
+    resultList.innerHTML="<p>Chưa có kết quả nào.</p>";
+    document.getElementById("statsBox").innerHTML="";
+    clearChart();
+    return;
+  }
+
+  resultList.innerHTML=normalizedData.map((r,index)=>{
+    const hasComment=!!findStudentComment(r.name,r.className,r.schoolName,r.level);
+    return `
+      <div class="result-item">
+        <div>
+          <b>${escapeHtml(r.name||"---")}</b>
+          ${r.className ? " | Lớp " + escapeHtml(r.className) : ""}
+          ${r.schoolName ? " | " + escapeHtml(r.schoolName) : ""}
+          | 🎮 Cấp ${r.level || 1}
+          | ⭐ ${getEffectiveScore(r)}
+          | ⏱ ${r.time}${r.timeLimit>0 ? "s còn lại" : "s"}
+          | 🧩 ${getEffectiveCorrectPairs(r)}/${r.totalPairs||0}
+          | ${r.completed ? "✅ Hoàn thành" : `❌ ${escapeHtml(r.statusText||"Chưa đúng")}`}
+          ${hasComment ? " | 💬 Đã có nhận xét" : ""}
+        </div>
+        <div class="result-actions">
+          <button class="lesson-btn" onclick="openLessonModal(${index})">Xem bài học sinh</button>
+          <button class="comment-btn" onclick="openCommentModal(${index})">Nhận xét</button>
+          <button class="delete-btn" onclick="deleteResult(${index})">Xóa</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  renderStats(normalizedData);
+  saveUiState();
+}
+
+function deleteResult(index){
+  let data=JSON.parse(localStorage.getItem("khkt"))||[];
+  if(index<0 || index>=data.length) return;
+  if(confirm("Bạn có chắc muốn xóa kết quả học sinh này không?")){
+    data.splice(index,1);
+    localStorage.setItem("khkt",JSON.stringify(data));
+    renderTeacherPanel();
+  }
+}
+
+function deleteAllResults(){
+  if(confirm("Bạn có chắc muốn xóa toàn bộ kết quả học sinh không?")){
+    localStorage.removeItem("khkt");
+    document.getElementById("teacherPanel").style.display="block";
+    renderTeacherPanel();
+  }
+}
+
+function renderStats(data){
+  if(data.length===0){
+    document.getElementById("statsBox").innerHTML="";
+    clearChart();
+    return;
+  }
+
+  const total=data.length;
+  const completedCount=data.filter(d=>d.completed).length;
+  const incompleteCount=total-completedCount;
+  const avgScore=(data.reduce((s,d)=>s+(Number(d.score)||0),0)/total).toFixed(1);
+  const avgTime=(data.reduce((s,d)=>s+(Number(d.time)||0),0)/total).toFixed(1);
+
+  document.getElementById("statsBox").innerHTML=`
+    <h3>📊 THỐNG KÊ NGHIÊN CỨU</h3>
+    <p>Tổng lượt chơi: ${total}</p>
+    <p>Hoàn thành: ${completedCount}</p>
+    <p>Chưa đúng: ${incompleteCount}</p>
+    <p>Điểm TB: ${avgScore}</p>
+    <p>Thời gian TB: ${avgTime}</p>
+  `;
+
+  drawPieChartsByLevel(data);
+}
+
+function clearChart(){
+  document.getElementById("chartRow").innerHTML="";
+}
+
+function drawPieStyle(ctx,cx,cy,r,items,title){
+  const total=items.reduce((s,i)=>s+i.value,0);
+
+  ctx.save();
+  ctx.textAlign="center";
+  ctx.fillStyle="#111";
+  ctx.font="bold 14px Arial";
+  ctx.fillText(title,cx,22);
+
+  if(total===0){
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.fillStyle="#c7ccd4";
+    ctx.fill();
+    ctx.strokeStyle="#ffffff";
+    ctx.lineWidth=2;
+    ctx.stroke();
+    ctx.fillStyle="#666";
+    ctx.font="12px Arial";
+    ctx.fillText("Chưa có dữ liệu",cx,cy+r+18);
+    ctx.restore();
+    return;
+  }
+
+  let start=-Math.PI/2;
+
+  items.forEach(item=>{
+    if(item.value<=0) return;
+    const angle=(item.value/total)*Math.PI*2;
+
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,start+angle);
+    ctx.closePath();
+    ctx.fillStyle=item.color;
+    ctx.fill();
+
+    ctx.strokeStyle="#ffffff";
+    ctx.lineWidth=2;
+    ctx.stroke();
+
+    const mid=start+angle/2;
+    const labelRadius=r*0.68;
+    const tx=cx+Math.cos(mid)*labelRadius;
+    const ty=cy+Math.sin(mid)*labelRadius;
+
+    const percent=((item.value/total)*100).toFixed(1).replace(".",",")+"%";
+    ctx.fillStyle="#ffffff";
+    ctx.font="bold 12px Arial";
+    ctx.fillText(percent,tx,ty+4);
+
+    start+=angle;
+  });
+
+  const legendCenterX=cx;
+  const legendStartY=cy+r+18;
+  ctx.font="11px Arial";
+
+  items.forEach((item,index)=>{
+    const ly=legendStartY+(index*18);
+    const label=`${item.label}: ${item.value}`;
+    const textWidth=ctx.measureText(label).width;
+    const boxX=legendCenterX-(textWidth+20)/2;
+    ctx.fillStyle=item.color;
+    ctx.fillRect(boxX,ly,12,12);
+    ctx.fillStyle="#111";
+    ctx.textAlign="left";
+    ctx.fillText(label,boxX+18,ly+10);
+  });
+
+  ctx.restore();
+}
+
+function drawPieChartsByLevel(data){
+  const chartRow=document.getElementById("chartRow");
+  chartRow.innerHTML="";
+
+  for(let level=1; level<=7; level++){
+    const canvas=document.createElement("canvas");
+    canvas.width=150;
+    canvas.height=230;
+    canvas.className="level-chart-canvas";
+    chartRow.appendChild(canvas);
+
+    const ctx=canvas.getContext("2d");
+    const levelData=data.filter(d=>Number(d.level)===level);
+    const done=levelData.filter(d=>d.completed).length;
+    const notDone=levelData.length-done;
+
+    drawPieStyle(ctx,75,92,54,[
+      {label:"Hoàn thành",value:done,color:"#3367d6"},
+      {label:"Chưa đúng",value:notDone,color:"#ef3f2f"}
+    ],`Cấp độ ${level}`);
+  }
+}
+
+function exportCSV(){
+  let data=JSON.parse(localStorage.getItem("khkt"))||[];
+  let csv="Ten,Lop,Truong,CapDo,Score,Time,TrangThai\n";
+  data.forEach(d=>{
+    csv+=`"${(d.name||"").replace(/"/g,'""')}","${(d.className||"").replace(/"/g,'""')}","${(d.schoolName||"").replace(/"/g,'""')}",${d.level||1},${d.score},${d.time},"${d.completed ? "Hoan thanh" : "Chua dung"}"\n`;
+  });
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="ketqua_khkt.csv";
+  a.click();
+}
+
+function presentationMode(){
+  if(document.documentElement.requestFullscreen){
+    document.documentElement.requestFullscreen();
+  }
+}
+
+function escapeHtml(str){
+  return String(str)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+document.getElementById("loginModal").addEventListener("click",function(e){
+  if(e.target.id==="loginModal") closeTeacherLogin();
+});
+document.getElementById("commentModal").addEventListener("click",function(e){
+  if(e.target.id==="commentModal") closeCommentModal();
+});
+document.getElementById("studentCommentModal").addEventListener("click",function(e){
+  if(e.target.id==="studentCommentModal") closeStudentCommentModal();
+});
+
+document.addEventListener("keydown",function(e){
+  const loginOpen=document.getElementById("loginModal").classList.contains("show");
+  const commentOpen=document.getElementById("commentModal").classList.contains("show");
+  const studentCommentOpen=document.getElementById("studentCommentModal").classList.contains("show");
+
+  if(e.key==="F5"){
+    saveUiState();
+    return;
+  }
+
+  if(loginOpen){
+    if(e.key==="Escape") closeTeacherLogin();
+    if(e.key==="Enter") teacherLogin();
+  }
+  if(commentOpen && e.key==="Escape") closeCommentModal();
+  if(studentCommentOpen && e.key==="Escape") closeStudentCommentModal();
+});
+
+window.addEventListener("beforeunload",saveUiState);
+
+document.addEventListener('DOMContentLoaded',()=>{
+  bindGlobalAudioUnlock();
+  resetAudio(clickSound);
+  resetAudio(clapSound);
+  resetAudio(wrongSound);
+  showWelcomeSequence();
+
+  setLevel(1,document.querySelectorAll(".level-btn")[0]);
+  bindStateInputs();
+  handleStudentNameInput();
+  handleSchoolNameInput();
+  restoreUiState();
+  toggleViewCommentButton();
+});
+</script>
+</body>
+</html>
