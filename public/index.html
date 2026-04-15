@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Hằng Đẳng Thức Vui Nhộn</title>
+<title>Ôn tập hằng đẳng thức đáng nhớ</title>
 <style>
 body{
   font-family:Arial,sans-serif;
@@ -12,6 +12,12 @@ body{
   margin:0;
   padding:0 0 30px 0;
   overflow-x:hidden;
+}
+body.lesson-modal-locked{
+  position:fixed;
+  width:100%;
+  overflow:hidden;
+  top:var(--lesson-lock-top,0px);
 }
 h1{
   font-family:Arial,sans-serif;
@@ -29,10 +35,18 @@ h1{
 .topBar{
   margin-top:10px;
   display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+}
+.topBar-row{
+  display:flex;
   justify-content:center;
   align-items:center;
   gap:8px;
   flex-wrap:wrap;
+  width:100%;
 }
 #infoBar{
   margin:14px 0 8px;
@@ -129,6 +143,12 @@ h1{
   border-color:#2563eb !important;
   box-shadow:0 0 12px rgba(37,99,235,.65);
 }
+body.game-active .card:hover .card-back{
+  background:#dbeafe;
+  color:#0b57d0;
+  border-color:#60a5fa;
+  box-shadow:0 0 10px rgba(96,165,250,.45);
+}
 .card.correct .card-back{
   background:linear-gradient(135deg,#10b981,#34d399) !important;
   color:#fff !important;
@@ -136,27 +156,54 @@ h1{
   box-shadow:0 0 18px rgba(16,185,129,.55);
 }
 .card.wrong .card-back{
-  background:#fee2e2 !important;
-  color:#b91c1c !important;
-  border-color:#ef4444 !important;
+  animation:wrongBlinkBg .65s ease-in-out infinite;
+}
+@keyframes wrongBlinkBg{
+  0%,100%{
+    background:#fee2e2 !important;
+    color:#b91c1c !important;
+    border-color:#ef4444 !important;
+    box-shadow:0 0 8px rgba(239,68,68,.28);
+    opacity:1;
+  }
+  50%{
+    background:#fecaca !important;
+    color:#991b1b !important;
+    border-color:#dc2626 !important;
+    box-shadow:0 0 16px rgba(239,68,68,.5);
+    opacity:1;
+  }
+}
+  50%{
+    background:#fecaca;
+    color:#991b1b;
+    border-color:#dc2626;
+    box-shadow:0 0 16px rgba(239,68,68,.5);
+    opacity:1;
+  }
+}
+  50%{transform:scale(1.04);}
 }
 .countdown-badge{
   position:absolute;
-  top:4px;
-  right:6px;
-  min-width:20px;
-  height:20px;
-  padding:0 5px;
-  border-radius:999px;
-  background:#ef4444;
-  color:#fff;
+  top:-2px;
+  left:2px;
+  min-width:auto;
+  height:auto;
+  padding:0;
+  margin:0;
+  border-radius:0;
+  background:transparent;
+  color:#1d4ed8;
   display:none;
-  align-items:center;
-  justify-content:center;
-  font-size:11px;
-  font-weight:bold;
-  box-shadow:0 2px 8px rgba(0,0,0,.2);
-  z-index:3;
+  align-items:flex-start;
+  justify-content:flex-start;
+  font-size:10px;
+  font-weight:700;
+  line-height:1;
+  box-shadow:none;
+  z-index:4;
+  pointer-events:none;
 }
 .countdown-badge.show{
   display:flex;
@@ -182,6 +229,64 @@ h1{
   border-radius:16px;
   box-sizing:border-box;
 }
+#finishBox.overlay-mode{
+  position:absolute;
+  margin:0;
+  z-index:9000;
+  box-shadow:0 18px 46px rgba(0,0,0,.28);
+}
+#finishBox .finish-title,
+#finishBox .answer-title{
+  color:#dc2626;
+}
+#finishBox .finish-header{
+  position:sticky;
+  top:0;
+  background:#fff;
+  z-index:2;
+  padding-bottom:10px;
+}
+#finishBox .finish-title{
+  margin:0 0 10px;
+}
+#finishBox .finish-player{
+  color:#1d4ed8;
+  margin:0;
+}
+#finishBox .finish-body{
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:8px;
+}
+#finishBox .finish-summary-line{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:18px;
+  flex-wrap:wrap;
+  margin:0 0 10px;
+}
+#finishBox .finish-summary-line span{
+  white-space:nowrap;
+}
+#finishBox .answer-content,
+#finishBox .answer-content .formula-name{
+  color:#1e3a8a;
+}
+#finishBox .finish-section-title{
+  font-weight:bold;
+  margin:12px 0 6px;
+}
+#finishBox .finish-section-title.correct-title{
+  color:#2563eb;
+}
+#finishBox .finish-section-title.wrong-title{
+  color:#dc2626;
+}
+#finishBox .finish-pair-item{
+  margin:6px 0;
+  line-height:1.5;
+}
 .formula-item{
   margin:10px 0;
   line-height:1.5;
@@ -203,6 +308,24 @@ h1{
 }
 #resultList{
   margin-top:10px;
+  max-height:390px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:6px;
+}
+#resultList::-webkit-scrollbar{
+  width:10px;
+}
+#resultList::-webkit-scrollbar-track{
+  background:#e5e7eb;
+  border-radius:999px;
+}
+#resultList::-webkit-scrollbar-thumb{
+  background:#94a3b8;
+  border-radius:999px;
+}
+#resultList::-webkit-scrollbar-thumb:hover{
+  background:#64748b;
 }
 .result-item{
   display:flex;
@@ -214,6 +337,19 @@ h1{
   background:#f5f7fb;
   border-radius:10px;
   flex-wrap:wrap;
+}
+.result-info{
+  flex:1 1 100%;
+  min-width:0;
+  line-height:1.45;
+}
+.result-main-info,.result-sub-info{
+  display:block;
+  white-space:normal;
+  word-break:break-word;
+}
+.result-sub-info{
+  margin-top:4px;
 }
 .result-actions{
   display:flex;
@@ -236,6 +372,50 @@ button{
 button:hover{opacity:.92;}
 .delete-btn{background:#ef4444;color:#fff;}
 .lesson-btn{background:#8b5cf6;color:#fff;}
+.password-field-wrap{
+  position:relative;
+  width:100%;
+}
+.password-field-wrap input{
+  width:100%;
+  padding-right:44px !important;
+  box-sizing:border-box;
+}
+.password-toggle-btn{
+  position:absolute;
+  top:50%;
+  right:10px;
+  transform:translateY(-50%);
+  background:transparent !important;
+  border:none;
+  padding:0 !important;
+  margin:0 !important;
+  cursor:pointer;
+  line-height:1;
+  color:#475569;
+  min-width:auto;
+  width:24px;
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.password-toggle-btn svg{
+  width:22px;
+  height:22px;
+  display:block;
+  stroke:#475569;
+  fill:none;
+  stroke-width:2.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.password-toggle-btn:hover{
+  opacity:1;
+}
+.password-toggle-btn:focus{
+  outline:none;
+}
 .comment-btn{background:#f59e0b;color:#fff;}
 .view-comment-btn{background:#22c55e;color:#fff;display:none;}
 #chartRow{display:flex;gap:6px;overflow:visible;align-items:flex-start;justify-content:space-between;flex-wrap:nowrap;padding:8px 0 4px;margin-top:12px;}
@@ -259,6 +439,14 @@ canvas{
   margin:12px auto 0;
   background:#f3f4f6;
   border-radius:12px;
+}
+#bottomActionRow{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:0;
 }
 #celebrationOverlay{
   position:fixed;
@@ -301,7 +489,7 @@ canvas{
   gap:18px;
   grid-column:1 / -1;
 }
-#loginModal,#commentModal,#studentCommentModal,#lessonModal{
+#loginModal,#commentModal,#studentCommentModal,#lessonModal,#studentLoginModal,#forgotPasswordModal,#changePasswordModal,#createStudentAccountModal{
   position:fixed;
   inset:0;
   background:rgba(0,0,0,.45);
@@ -312,7 +500,7 @@ canvas{
   padding:20px;
   box-sizing:border-box;
 }
-#loginModal.show,#commentModal.show,#studentCommentModal.show,#lessonModal.show{
+#loginModal.show,#commentModal.show,#studentCommentModal.show,#lessonModal.show,#studentLoginModal.show,#forgotPasswordModal.show,#changePasswordModal.show,#createStudentAccountModal.show{
   display:flex;
 }
 .login-box,.comment-box{
@@ -324,6 +512,39 @@ canvas{
   box-sizing:border-box;
   box-shadow:0 14px 40px rgba(0,0,0,.28);
   text-align:left;
+  max-height:78vh;
+  overflow-y:auto;
+}
+.lesson-view-box{
+  width:min(650px,96vw);
+  height:min(82vh,860px);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.lesson-view-header{
+  flex:0 0 auto;
+  background:#fff;
+}
+.lesson-view-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  padding-right:6px;
+}
+.lesson-view-footer{
+  flex:0 0 auto;
+  display:flex;
+  justify-content:flex-end;
+  margin-top:14px;
+  padding-top:8px;
+  background:#fff;
+}
+.lesson-info-line{
+  display:block;
+  white-space:normal;
+  word-break:break-word;
+  margin-bottom:4px;
 }
 .login-box h3,.comment-box h3{
   margin:0 0 14px 0;
@@ -363,7 +584,7 @@ canvas{
   background:#2563eb;
   color:#fff;
 }
-#loginError{
+#loginError,#studentLoginError{
   min-height:20px;
   margin-top:10px;
   font-size:14px;
@@ -387,8 +608,32 @@ canvas{
   padding:14px;
   line-height:1.6;
   min-height:80px;
-  max-height:65vh;
+  overflow:visible;
+}
+.student-comment-box{
+  width:min(700px,92vw);
+  height:min(78vh,720px);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.student-comment-header{
+  flex:0 0 auto;
+  background:#fff;
+}
+.student-comment-scroll{
+  flex:1 1 auto;
+  min-height:0;
   overflow-y:auto;
+  padding-right:6px;
+}
+.student-comment-footer{
+  flex:0 0 auto;
+  display:flex;
+  justify-content:flex-end;
+  margin-top:14px;
+  padding-top:8px;
+  background:#fff;
 }
 
 #welcomeOverlay,#rulesOverlay{
@@ -402,6 +647,43 @@ canvas{
   box-sizing:border-box;
 }
 #welcomeOverlay.show,#rulesOverlay.show{display:flex;}
+#reviewResultModal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  box-sizing:border-box;
+  z-index:30000 !important;
+}
+#reviewResultModal.show{
+  display:flex !important;
+}
+.review-result-box{
+  width:min(820px,92vw);
+  height:min(82vh,820px);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.review-result-header{
+  flex:0 0 auto;
+  background:#fff;
+}
+.review-result-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  padding-right:6px;
+}
+.review-result-footer{
+  flex:0 0 auto;
+  background:#fff;
+  margin-top:14px;
+  padding-top:8px;
+  justify-content:flex-end;
+}
 #welcomeOverlay{
   background:radial-gradient(circle at top,#27496d 0%,#14213d 42%,#0b1220 100%);
   overflow:hidden;
@@ -538,6 +820,118 @@ canvas{
   border-radius:12px;
 }
 
+
+.account-manager-card,.class-battle-card{background:#f8fafc;border:2px solid #dbeafe;border-radius:14px;padding:14px;margin-top:12px;color:#111827;text-align:left;}
+.account-grid{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px;margin-top:10px;}
+.account-grid.secondary{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}
+.account-inline-row{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr) auto auto auto;gap:10px;align-items:center;margin-top:10px;}
+.account-inline-row input{width:100%;box-sizing:border-box;margin:0;}
+.account-inline-row button{margin:0;white-space:nowrap;}
+.account-actions-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.account-import-box{margin-top:14px;padding:12px;border-radius:12px;background:#eff6ff;border:1px solid #bfdbfe;}
+.account-import-box b{color:#1d4ed8;}
+.account-import-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+.account-note{margin-top:8px;color:#475569;line-height:1.55;font-size:14px;}
+.account-bulk-bar{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:flex-end;
+  margin-top:12px;
+  text-align:right;
+}
+.account-bulk-bar .account-actions-row{
+  margin-top:0;
+  justify-content:flex-end;
+}
+
+.account-row-2{grid-column:2 / span 1;}
+.password-row-2{grid-column:1 / span 1;}
+.account-inline-actions{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.account-table-wrap{
+  margin-top:12px;
+  max-height:321px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  background:#fff;
+}
+.account-table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:0;
+  background:#fff;
+}
+.account-table th,.account-table td{border:1px solid #dbeafe;padding:8px;text-align:left;font-size:14px;vertical-align:top;}
+.account-table th{
+  background:#eff6ff;
+  color:#1d4ed8;
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+.leaderboard-list{margin-top:10px;display:grid;gap:8px;max-height:288px;overflow-y:auto;overflow-x:hidden;padding-right:6px;}
+.leaderboard-list::-webkit-scrollbar{width:10px;}
+.leaderboard-list::-webkit-scrollbar-track{background:#e5e7eb;border-radius:999px;}
+.leaderboard-list::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:999px;}
+.leaderboard-list::-webkit-scrollbar-thumb:hover{background:#64748b;}
+.leaderboard-item{padding:10px 12px;border-radius:10px;background:#eff6ff;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;min-height:76px;box-sizing:border-box;}
+#playMode{min-width:180px;}
+#studentName:disabled,#className:disabled,#schoolName:disabled{opacity:.7;cursor:not-allowed;background:#e5e7eb;color:#64748b;}
+#rankText.rank-blink{animation:rankBlink .8s ease-in-out 6;}
+@keyframes rankBlink{0%,100%{opacity:1;filter:none;}50%{opacity:.2;filter:drop-shadow(0 0 8px rgba(255,215,0,.8));}}
+
+@media (max-width:1200px){
+  .account-inline-row{grid-template-columns:repeat(2,minmax(220px,1fr));}
+}
+
+
+#studentAccountUploadModal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10000;
+  padding:20px;
+  box-sizing:border-box;
+}
+#studentAccountUploadModal.show{
+  display:flex;
+}
+.upload-file-box{
+  width:min(640px,92vw);
+}
+.upload-file-title{
+  margin:0 0 14px 0;
+  text-align:center;
+  color:#0b57d0;
+}
+.upload-file-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.upload-file-name{
+  min-height:24px;
+  color:#475569;
+  word-break:break-word;
+}
+.upload-file-tip{
+  margin-top:12px;
+  color:#475569;
+  line-height:1.6;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  border-radius:12px;
+  padding:12px;
+}
+
 </style>
 </head>
 <body>
@@ -581,13 +975,25 @@ canvas{
 <h1>🏆 ÔN TẬP HẰNG ĐẲNG THỨC ĐÁNG NHỚ</h1>
 
 <div class="topBar">
-  <input id="studentName" list="studentNameSuggestions" placeholder="Nhập tên học sinh" oninput="handleStudentNameInput()" autocomplete="off">
-  <datalist id="studentNameSuggestions"></datalist>
-  <input id="className" placeholder="Chọn lớp" oninput="handleStudentNameInput();handleSchoolNameInput();toggleViewCommentButton()" autocomplete="off">
-  <input id="schoolName" list="schoolNameSuggestions" placeholder="Trường" oninput="handleSchoolNameInput()" autocomplete="off">
-  <datalist id="schoolNameSuggestions"></datalist>
-  <button onclick="startGame()">Bắt đầu</button>
-  <button id="viewCommentBtn" class="view-comment-btn" onclick="showStudentComment()">Chi tiết</button>
+  <div class="topBar-row">
+    <input id="studentName" list="studentNameSuggestions" placeholder="Nhập tên học sinh" oninput="handleStudentNameInput()" autocomplete="off" disabled>
+    <datalist id="studentNameSuggestions"></datalist>
+    <input id="className" placeholder="Lớp" oninput="handleStudentNameInput();handleSchoolNameInput();toggleViewCommentButton()" autocomplete="off" disabled>
+    <input id="schoolName" list="schoolNameSuggestions" placeholder="Trường" oninput="handleSchoolNameInput()" autocomplete="off" disabled>
+    <datalist id="schoolNameSuggestions"></datalist>
+    <select id="playMode" onchange="saveUiState()">
+      <option value="individual">Chế độ cá nhân</option>
+      <option value="class_battle">Thi đấu theo lớp</option>
+    </select>
+    <button onclick="startGame()">Bắt đầu</button>
+  </div>
+  <div class="topBar-row">
+    <button id="studentLoginBtn" onclick="openStudentLogin()">Đăng nhập học sinh</button>
+    <button id="studentCreateBtn" onclick="openCreateStudentAccountModal()">Tạo tài khoản</button>
+    <button id="studentChangePassBtn" style="display:none" onclick="openChangePasswordModal()">Đổi mật khẩu</button>
+    <button id="studentLogoutBtn" style="display:none;background:#ef4444;color:#fff" onclick="logoutStudent()">Đăng xuất</button>
+    <button id="viewCommentBtn" class="view-comment-btn" onclick="showStudentComment()">Chi tiết</button>
+  </div>
 </div>
 
 <div id="infoBar">
@@ -595,7 +1001,7 @@ canvas{
   ⭐ Điểm: <span id="scoreText">0</span> |
   ⏱ <span id="time">0</span>s |
   ❤️ <span id="livesText">∞</span> |
-  🔥 Combo: <span id="comboText">0</span>
+  🔥 Combo: <span id="comboText">0</span> | 🏅 Hạng: <span id="rankText">---</span>
 </div>
 
 <div id="levelBar">
@@ -612,17 +1018,21 @@ canvas{
 <div id="formulaBox">📘 Hằng đẳng thức sẽ hiển thị tại đây</div>
 <div id="finishBox"></div>
 
-<button onclick="openTeacherLogin()">Dashboard giáo viên</button>
-<button onclick="presentationMode()">🎥 Chế độ toàn màn hình</button>
+<div id="bottomActionRow">
+  <button onclick="openTeacherLogin()">Quản trị</button>
+  <button onclick="presentationMode()">🎥 Chế độ toàn màn hình</button>
+</div>
 
 <div id="teacherPanel">
   <h3>🏫 Kết quả học sinh</h3>
   <div id="resultList"></div>
-  <div style="margin-top:10px;">
+  <div class="result-toolbar">
+    <button onclick="exportCSV()">📄 Xuất dữ liệu Excel</button>
     <button class="delete-all-btn" onclick="deleteAllResults()">🗑 Xóa hết kết quả</button>
   </div>
+  <div id="classBattleBox" style="margin-top:16px;"></div>
+  <div id="accountManagerBox" style="margin-top:16px;"></div>
   <div id="statsBox" style="margin-top:16px;"></div>
-  <button onclick="exportCSV()">📄 Xuất dữ liệu Excel</button>
   <div id="chartRow"></div>
 </div>
 
@@ -655,101 +1065,441 @@ canvas{
 </div>
 
 <div id="studentCommentModal">
-  <div class="comment-box">
-    <h3>📋 Chi tiết theo cấp độ</h3>
-    <div id="studentCommentInfo" class="comment-student-info"></div>
-    <div id="studentCommentContent" class="student-comment-content"></div>
-    <div class="comment-actions">
+  <div class="comment-box student-comment-box">
+    <div class="student-comment-header">
+      <h3>📋 Chi tiết theo cấp độ</h3>
+      <div id="studentCommentInfo" class="comment-student-info"></div>
+    </div>
+    <div class="student-comment-scroll">
+      <div id="studentCommentContent" class="student-comment-content"></div>
+    </div>
+    <div class="comment-actions student-comment-footer">
       <button class="comment-cancel" onclick="closeStudentCommentModal()">Đóng</button>
     </div>
   </div>
 </div>
 
 <div id="lessonModal">
-  <div class="comment-box">
-    <h3>📘 Bài học sinh đã ghép</h3>
-    <div id="lessonStudentInfo" class="comment-student-info"></div>
-    <div id="lessonContent" class="student-comment-content"></div>
-    <div class="comment-actions">
+  <div class="comment-box lesson-view-box">
+    <div class="lesson-view-header">
+      <h3>📘 Bài học sinh đã ghép</h3>
+      <div id="lessonStudentInfo" class="comment-student-info"></div>
+    </div>
+    <div class="lesson-view-scroll">
+      <div id="lessonContent" class="student-comment-content"></div>
+    </div>
+    <div class="comment-actions lesson-view-footer">
       <button class="comment-cancel" onclick="closeLessonModal()">Đóng</button>
     </div>
   </div>
 </div>
 
-<audio id="clickSound" preload="auto">
-  <source src="/sound/click.mp3" type="audio/mpeg">
-</audio>
-<audio id="clapSound" preload="auto">
-  <source src="/sound/clap.mp3" type="audio/mpeg">
-</audio>
-<audio id="wrongSound" preload="auto">
-  <source src="/sound/wrong.mp3" type="audio/mpeg">
-</audio>
+<div id="reviewResultModal" style="display:none; z-index:30000;">
+  <div class="comment-box review-result-box">
+    <div class="review-result-header">
+      <h3>📄 Xem lại kết quả</h3>
+      <div id="reviewResultInfo" class="comment-student-info"></div>
+    </div>
+    <div class="review-result-scroll">
+      <div id="reviewResultContent" class="student-comment-content"></div>
+    </div>
+    <div class="comment-actions review-result-footer">
+      <button class="comment-cancel" onclick="closeReviewResultModal()">Đóng</button>
+    </div>
+  </div>
+</div>
 
+
+<div id="studentLoginModal">
+  <div class="login-box">
+    <h3>🔐 Đăng nhập học sinh</h3>
+    <label for="studentUser">Tài khoản</label>
+    <input id="studentUser" type="text" placeholder="Nhập tài khoản">
+    <label for="studentPass">Mật khẩu</label>
+    <input id="studentPass" type="password" placeholder="Nhập mật khẩu">
+    <div id="studentLoginError"></div>
+    <div class="login-actions">
+      <button class="login-cancel" onclick="closeStudentLogin()">Hủy</button>
+      <button class="login-cancel" onclick="openForgotPasswordModal()">Quên mật khẩu</button>
+      <button class="login-submit" onclick="studentLogin()">Đăng nhập</button>
+    </div>
+  </div>
+</div>
+
+<div id="forgotPasswordModal">
+  <div class="comment-box">
+    <h3>🔎 Lấy lại tài khoản / mật khẩu</h3>
+    <label for="forgotName">Họ tên</label>
+    <input id="forgotName" type="text" placeholder="Nhập họ tên">
+    <label for="forgotClass">Lớp</label>
+    <input id="forgotClass" type="text" placeholder="Nhập lớp">
+    <label for="forgotSchool">Trường</label>
+    <input id="forgotSchool" type="text" placeholder="Nhập trường">
+    <div id="forgotResult" class="comment-student-info" style="margin-top:12px;"></div>
+    <div class="comment-actions">
+      <button class="comment-cancel" onclick="closeForgotPasswordModal()">Đóng</button>
+      <button class="save-comment-btn" onclick="recoverStudentAccount()">Tra cứu</button>
+    </div>
+  </div>
+</div>
+
+<div id="changePasswordModal">
+  <div class="comment-box">
+    <h3>🔐 Đổi mật khẩu học sinh</h3>
+    <label for="oldStudentPass">Mật khẩu hiện tại</label>
+    <input id="oldStudentPass" type="password" placeholder="Nhập mật khẩu hiện tại">
+    <label for="newStudentPass">Mật khẩu mới</label>
+    <input id="newStudentPass" type="password" placeholder="Nhập mật khẩu mới">
+    <label for="confirmStudentPass">Nhập lại mật khẩu mới</label>
+    <input id="confirmStudentPass" type="password" placeholder="Nhập lại mật khẩu mới">
+    <div id="changePassResult" class="comment-student-info" style="margin-top:12px;"></div>
+    <div class="comment-actions">
+      <button class="comment-cancel" onclick="closeChangePasswordModal()">Hủy</button>
+      <button class="save-comment-btn" onclick="changeStudentPassword()">Lưu mật khẩu mới</button>
+    </div>
+  </div>
+</div>
+
+<div id="createStudentAccountModal">
+  <div class="comment-box">
+    <h3>🆕 Tạo tài khoản học sinh</h3>
+    <label for="createAccountName">Họ tên</label>
+    <input id="createAccountName" type="text" placeholder="Nhập họ tên">
+    <label for="createAccountClass">Lớp</label>
+    <input id="createAccountClass" type="text" placeholder="Nhập lớp">
+    <label for="createAccountSchool">Trường</label>
+    <input id="createAccountSchool" type="text" placeholder="Nhập trường">
+    <div id="createAccountResult" class="comment-student-info" style="margin-top:12px;">Điền đầy đủ Họ tên, Lớp, Trường để tạo tài khoản mới.</div>
+    <div class="comment-actions">
+      <button class="comment-cancel" onclick="closeCreateStudentAccountModal()">Đóng</button>
+      <button class="save-comment-btn" onclick="createOwnStudentAccount()">Tạo tài khoản</button>
+    </div>
+  </div>
+</div>
+
+<div id="studentAccountUploadModal">
+  <div class="comment-box upload-file-box">
+    <h3 class="upload-file-title">📂 Tải danh sách học sinh</h3>
+    <input id="studentAccountUploadFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain" style="display:none" onchange="handleStudentAccountUploadFileChange()">
+    <div class="upload-file-row">
+      <button type="button" onclick="triggerStudentAccountUploadFile()">Chọn tệp</button>
+      <button type="button" class="save-comment-btn" onclick="confirmStudentAccountUpload()">Tải lên</button>
+      <button type="button" class="comment-cancel" onclick="closeStudentAccountUploadModal()">Đóng</button>
+    </div>
+    <div id="studentAccountUploadFileLabel" class="upload-file-name" style="margin-top:12px;">Chưa chọn tệp nào</div>
+    <div class="upload-file-tip">Chỉ cho phép các tệp PDF, Word (.doc hoặc .docx), Excel (.xls hoặc .xlsx). Sau khi chọn tệp, nhấp nút “Tải lên” để game tạo tài khoản học sinh từ danh sách tải lên.</div>
+  </div>
+</div>
+
+<audio id="clickSound" src="sound/click.mp3"></audio>
+<audio id="clapSound" src="sound/clap.mp3" preload="auto" autoplay playsinline></audio>
+<audio id="wrongSound" src="sound/wrong.mp3"></audio>
+<audio id="voicePromptAudio" preload="auto"></audio>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+if(window.pdfjsLib){
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+</script>
 <script>
 const clickSound=document.getElementById("clickSound");
 const clapSound=document.getElementById("clapSound");
 const wrongSound=document.getElementById("wrongSound");
 
-const SERVER_RESULTS_KEY="khkt_server_cache";
-let audioUnlocked=false;
-let welcomeAudioPlayed=false;
-let welcomeSoundContext=null;
+const voicePromptAudio=document.getElementById("voicePromptAudio");
 
-function resetAudio(audio){
-  if(!audio) return;
-  try{
-    audio.pause();
-    audio.currentTime=0;
-  }catch(e){}
-}
+const AI_TTS_CONFIG={
+  provider:"openai",
+  apiKey:"DAN_OPENAI_API_KEY_VAO_DAY",
+  endpoint:"https://api.openai.com/v1/audio/speech",
+  model:"gpt-4o-mini-tts",
+  voice:"cedar",
+  responseFormat:"mp3",
+  speed:1.35,
+  instructions:"Đọc hoàn toàn bằng tiếng Việt, giọng nam Việt Nam rõ ràng, dứt khoát, nhanh vừa phải, cuốn hút như MC chuyên nghiệp, ưu tiên sắc thái miền Nam, nhấn nhá tự nhiên và dễ nghe cho học sinh trung học cơ sở."
+};
 
-function safePlay(audio,volume=1){
-  if(!audio) return Promise.resolve(false);
-  try{
-    audio.pause();
-    audio.currentTime=0;
-    audio.volume=volume;
-    const playPromise=audio.play();
-    if(playPromise && typeof playPromise.then==='function'){
-      return playPromise.then(()=>true).catch(()=>false);
-    }
-    return Promise.resolve(true);
-  }catch(e){
-    return Promise.resolve(false);
-  }
-}
+let voicePromptUnlocked=false;
+let voicePromptLastKey='';
+let voicePromptLastAt=0;
+let voicePromptObjectUrl='';
+let voicePromptAbortController=null;
+const voicePromptCache=new Map();
 
-function unlockSingleAudio(audio){
-  if(!audio) return Promise.resolve();
+function unlockVoicePromptAudio(){
+  if(voicePromptUnlocked || !voicePromptAudio) return;
+  voicePromptUnlocked=true;
   try{
-    audio.volume=0;
-    const p=audio.play();
+    voicePromptAudio.muted=true;
+    const p=voicePromptAudio.play();
     if(p && typeof p.then==='function'){
-      return p.then(()=>{
-        audio.pause();
-        audio.currentTime=0;
-        audio.volume=1;
-      }).catch(()=>{});
+      p.then(()=>{
+        voicePromptAudio.pause();
+        voicePromptAudio.currentTime=0;
+        voicePromptAudio.removeAttribute('src');
+        voicePromptAudio.load();
+        voicePromptAudio.muted=false;
+      }).catch(()=>{
+        voicePromptAudio.muted=false;
+      });
+    }else{
+      voicePromptAudio.pause();
+      voicePromptAudio.currentTime=0;
+      voicePromptAudio.removeAttribute('src');
+      voicePromptAudio.load();
+      voicePromptAudio.muted=false;
     }
-    audio.pause();
-    audio.currentTime=0;
-    audio.volume=1;
-    return Promise.resolve();
-  }catch(e){
-    return Promise.resolve();
+  }catch(err){
+    try{ voicePromptAudio.muted=false; }catch(e){}
   }
 }
 
-function unlockAudio(){
-  if(audioUnlocked) return;
-  audioUnlocked=true;
-  Promise.all([
-    unlockSingleAudio(clickSound),
-    unlockSingleAudio(clapSound),
-    unlockSingleAudio(wrongSound)
-  ]).catch(()=>{});
+["pointerdown","click","touchstart","keydown"].forEach(evt=>{
+  document.addEventListener(evt, unlockVoicePromptAudio, { once:true, passive:true, capture:true });
+});
+
+function cleanupVoicePromptObjectUrl(url=''){
+  const revokeUrl=url || voicePromptObjectUrl;
+  if(!revokeUrl || !revokeUrl.startsWith('blob:')) return;
+  try{ URL.revokeObjectURL(revokeUrl); }catch(err){}
+  if(revokeUrl===voicePromptObjectUrl) voicePromptObjectUrl='';
 }
+
+function stopCurrentVoicePrompt(){
+  if(voicePromptAbortController){
+    try{ voicePromptAbortController.abort(); }catch(err){}
+    voicePromptAbortController=null;
+  }
+  if(!voicePromptAudio) return;
+  try{
+    voicePromptAudio.pause();
+    voicePromptAudio.currentTime=0;
+  }catch(err){}
+}
+
+function playVoicePromptByUrl(url){
+  if(!url || !voicePromptAudio) return;
+  unlockVoicePromptAudio();
+  stopCurrentVoicePrompt();
+  cleanupVoicePromptObjectUrl();
+  voicePromptObjectUrl=url.startsWith('blob:') ? url : '';
+  voicePromptAudio.src=url;
+  voicePromptAudio.load();
+  const p=voicePromptAudio.play();
+  if(p && typeof p.catch==='function'){
+    p.catch(()=>{});
+  }
+}
+
+async function requestOpenAITtsUrl(text){
+  const apiKey=String(AI_TTS_CONFIG.apiKey||'').trim();
+  if(!apiKey || apiKey==='DAN_OPENAI_API_KEY_VAO_DAY'){
+    console.warn('Chưa thêm OpenAI API key cho AI TTS.');
+    return '';
+  }
+
+  if(voicePromptCache.has(text)){
+    return voicePromptCache.get(text);
+  }
+
+  const controller=new AbortController();
+  voicePromptAbortController=controller;
+
+  try{
+    const response=await fetch(AI_TTS_CONFIG.endpoint,{
+      method:'POST',
+      headers:{
+        'Authorization':`Bearer ${apiKey}`,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        model:AI_TTS_CONFIG.model,
+        voice:AI_TTS_CONFIG.voice,
+        input:text,
+        instructions:AI_TTS_CONFIG.instructions,
+        response_format:AI_TTS_CONFIG.responseFormat,
+        speed:AI_TTS_CONFIG.speed
+      }),
+      signal:controller.signal
+    });
+
+    if(!response.ok){
+      const errText=await response.text().catch(()=>response.statusText||'');
+      console.warn('OpenAI TTS lỗi:',response.status,errText);
+      return '';
+    }
+
+    const audioBlob=await response.blob();
+    if(controller.signal.aborted) return '';
+    const blobUrl=URL.createObjectURL(audioBlob);
+    voicePromptCache.set(text,blobUrl);
+    return blobUrl;
+  }catch(err){
+    if(err && err.name!=='AbortError'){
+      console.warn('Không gọi được OpenAI TTS:',err);
+    }
+    return '';
+  }finally{
+    if(voicePromptAbortController===controller){
+      voicePromptAbortController=null;
+    }
+  }
+}
+
+function getVoiceReadText(rawText){
+  const text=String(rawText||'').replace(/\s+/g,' ').trim();
+  if(!text) return '';
+  return text
+    .replace(/^💡\s*Gợi ý\s*:\s*/i,'')
+    .replace(/^Gợi ý\s*:\s*/i,'')
+    .replace(/^💡\s*/,'')
+    .trim();
+}
+
+let voicePromptQueue=[];
+let voicePromptIsPlaying=false;
+let voicePromptCurrentSource='';
+
+function splitVoicePromptText(text,maxLen=180){
+  const clean=String(text||'').replace(/\s+/g,' ').trim();
+  if(!clean) return [];
+  if(clean.length<=maxLen) return [clean];
+  const sentences=clean.split(/(?<=[\.\!\?\:\;])\s+/);
+  const chunks=[];
+  let current='';
+  sentences.forEach(sentence=>{
+    const s=sentence.trim();
+    if(!s) return;
+    if((current ? current.length+1 : 0)+s.length<=maxLen){
+      current+=(current?' ':'')+s;
+      return;
+    }
+    if(current){
+      chunks.push(current);
+      current='';
+    }
+    if(s.length<=maxLen){
+      current=s;
+      return;
+    }
+    const words=s.split(/\s+/);
+    let part='';
+    words.forEach(word=>{
+      if((part ? part.length+1 : 0)+word.length<=maxLen){
+        part+=(part?' ':'')+word;
+      }else{
+        if(part) chunks.push(part);
+        part=word;
+      }
+    });
+    if(part) current=part;
+  });
+  if(current) chunks.push(current);
+  return chunks;
+}
+
+function buildGoogleTranslateTtsUrl(text){
+  return `https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(text)}`;
+}
+
+function stopVoicePromptQueue(){
+  voicePromptQueue=[];
+  voicePromptIsPlaying=false;
+  voicePromptCurrentSource='';
+  stopCurrentVoicePrompt();
+}
+
+function interruptAndSpeakVietnameseMale(text){
+  stopVoicePromptQueue();
+  speakVietnameseMale(text,true);
+}
+
+function playNextVoicePromptInQueue(){
+  if(!voicePromptQueue.length){
+    voicePromptIsPlaying=false;
+    voicePromptCurrentSource='';
+    return;
+  }
+  voicePromptIsPlaying=true;
+  const nextItem=voicePromptQueue.shift();
+  if(!nextItem) return;
+  voicePromptCurrentSource=nextItem.source;
+  if(nextItem.source==='openai'){
+    playVoicePromptByUrl(nextItem.url);
+    return;
+  }
+  if(!voicePromptAudio) return;
+  unlockVoicePromptAudio();
+  try{
+    voicePromptAudio.pause();
+    voicePromptAudio.currentTime=0;
+  }catch(err){}
+  cleanupVoicePromptObjectUrl();
+  voicePromptAudio.removeAttribute('src');
+  voicePromptAudio.src=nextItem.url;
+  voicePromptAudio.load();
+  const p=voicePromptAudio.play();
+  if(p && typeof p.catch==='function'){
+    p.catch(()=>{
+      voicePromptCurrentSource='';
+      playNextVoicePromptInQueue();
+    });
+  }
+}
+
+voicePromptAudio.addEventListener('ended',()=>{
+  if(voicePromptCurrentSource==='openai'){
+    cleanupVoicePromptObjectUrl();
+  }
+  voicePromptCurrentSource='';
+  playNextVoicePromptInQueue();
+});
+
+voicePromptAudio.addEventListener('error',()=>{
+  if(voicePromptCurrentSource==='openai'){
+    cleanupVoicePromptObjectUrl();
+  }
+  voicePromptCurrentSource='';
+  playNextVoicePromptInQueue();
+});
+
+async function speakVietnameseMale(text,forceSpeak=false){
+  const spokenText=getVoiceReadText(text);
+  if(!spokenText) return;
+
+  const now=Date.now();
+  const dedupeKey=`${forceSpeak?'1':'0'}|${spokenText}`;
+  if(!forceSpeak && dedupeKey===voicePromptLastKey && now-voicePromptLastAt<250){
+    return;
+  }
+  voicePromptLastKey=dedupeKey;
+  voicePromptLastAt=now;
+
+  stopVoicePromptQueue();
+
+  const audioUrl=await requestOpenAITtsUrl(spokenText);
+  if(audioUrl){
+    voicePromptQueue=[{source:'openai',url:audioUrl}];
+    playNextVoicePromptInQueue();
+    return;
+  }
+
+  const fallbackChunks=splitVoicePromptText(spokenText,170).map(item=>({
+    source:'google',
+    url:buildGoogleTranslateTtsUrl(item)
+  }));
+  if(!fallbackChunks.length) return;
+  voicePromptQueue=fallbackChunks;
+  playNextVoicePromptInQueue();
+}
+
+let welcomeAudioPlayed=false;
+let welcomeAudioAttempting=false;
+let welcomeSoundContext=null;
+let welcomeRetryTimers=[];
 
 function playWelcomeFallbackFanfare(){
   try{
@@ -776,19 +1526,43 @@ function playWelcomeFallbackFanfare(){
   }catch(e){}
 }
 
-async function playWelcomeSound(forceFallback=false){
+function markWelcomeAudioPlayed(){
+  welcomeAudioPlayed=true;
+  welcomeAudioAttempting=false;
+  welcomeRetryTimers.forEach(id=>clearTimeout(id));
+  welcomeRetryTimers=[];
+}
+
+function playWelcomeSound(){
   if(welcomeAudioPlayed) return;
-  if(forceFallback){
-    playWelcomeFallbackFanfare();
-    welcomeAudioPlayed=true;
-    return;
-  }
-  const ok=await safePlay(clapSound,1);
-  if(ok){
-    welcomeAudioPlayed=true;
-  }else{
-    playWelcomeFallbackFanfare();
-  }
+  try{
+    clapSound.muted=false;
+    clapSound.volume=1;
+    clapSound.autoplay=true;
+    clapSound.setAttribute('autoplay','autoplay');
+    clapSound.setAttribute('playsinline','playsinline');
+    clapSound.load();
+    clapSound.currentTime=0;
+    const playPromise=clapSound.play();
+    if(playPromise && typeof playPromise.then==='function'){
+      playPromise.then(()=>{
+        markWelcomeAudioPlayed();
+      }).catch(()=>{});
+    }else{
+      markWelcomeAudioPlayed();
+    }
+  }catch(e){}
+}
+
+function scheduleWelcomeSoundRetries(){
+  if(welcomeAudioPlayed || welcomeAudioAttempting) return;
+  welcomeAudioAttempting=true;
+  [0,80,180,320,500,800,1200,1800,2600].forEach(delay=>{
+    const id=setTimeout(()=>{
+      if(!welcomeAudioPlayed) playWelcomeSound();
+    },delay);
+    welcomeRetryTimers.push(id);
+  });
 }
 
 function createWelcomeFireworks(){
@@ -823,76 +1597,87 @@ function showWelcomeSequence(){
   if(!welcome||!rules) return;
   welcome.classList.add('show');
   createWelcomeFireworks();
-  playWelcomeSound();
-  setTimeout(()=>{ if(!welcomeAudioPlayed) playWelcomeSound(true); },600);
+  scheduleWelcomeSoundRetries();
   setTimeout(()=>{
     welcome.classList.remove('show');
     rules.classList.add('show');
   },4000);
 }
 
-async function closeRulesOverlay(){
-  try{
-    unlockAudio();
-    const played=await safePlay(clapSound,1);
-    if(!played){
-      playWelcomeFallbackFanfare();
-    }
-  }catch(e){
-    try{ playWelcomeFallbackFanfare(); }catch(_){}
-  }
+function closeRulesOverlay(){
   document.getElementById('rulesOverlay').classList.remove('show');
 }
 
-function bindGlobalAudioUnlock(){
-  const unlockHandler=()=>{
-    unlockAudio();
-    const welcomeVisible=document.getElementById('welcomeOverlay')?.classList.contains('show');
-    if(welcomeVisible && !welcomeAudioPlayed){
-      playWelcomeSound();
-    }
-  };
-  ['pointerdown','mousedown','touchstart','keydown'].forEach(evt=>{
-    document.addEventListener(evt,unlockHandler,{passive:true});
+function getPasswordToggleIcon(isVisible){
+  if(isVisible){
+    return `<svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+      <circle cx="12" cy="12" r="3.2"></circle>
+    </svg>`;
+  }
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+    <circle cx="12" cy="12" r="3.2"></circle>
+    <path d="M5 19L19 5"></path>
+  </svg>`;
+}
+
+function setupPasswordToggle(inputId){
+  const input=document.getElementById(inputId);
+  if(!input || input.dataset.passwordToggleReady==='1') return;
+  if(input.type!=='password' && input.type!=='text') return;
+
+  const wrapper=document.createElement('div');
+  wrapper.className='password-field-wrap';
+  input.parentNode.insertBefore(wrapper,input);
+  wrapper.appendChild(input);
+
+  const toggleBtn=document.createElement('button');
+  toggleBtn.type='button';
+  toggleBtn.className='password-toggle-btn';
+  toggleBtn.setAttribute('aria-label','Hiện hoặc ẩn mật khẩu');
+  toggleBtn.innerHTML=getPasswordToggleIcon(false);
+
+  toggleBtn.addEventListener('click',()=>{
+    const isVisible=input.type==='text';
+    input.type=isVisible ? 'password' : 'text';
+    toggleBtn.innerHTML=getPasswordToggleIcon(!isVisible);
   });
+
+  wrapper.appendChild(toggleBtn);
+  input.dataset.passwordToggleReady='1';
 }
 
-async function saveResultToServer(payload){
-  try{
-    const res=await fetch('/api/save-result',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
-    });
-    if(!res.ok) throw new Error('Server save failed');
-    return await res.json();
-  }catch(error){
-    console.warn('Không lưu được kết quả lên server:',error);
-    return null;
+function initPasswordToggles(){
+  ['teacherPass','studentPass','oldStudentPass','newStudentPass','confirmStudentPass','newAccountPass'].forEach(setupPasswordToggle);
+}
+
+function updateBottomActionRowSpacing(){
+  const row=document.getElementById('bottomActionRow');
+  const formulaBox=document.getElementById('formulaBox');
+  const finishBox=document.getElementById('finishBox');
+  const levelBar=document.getElementById('levelBar');
+  if(!row || !formulaBox || !finishBox || !levelBar) return;
+
+  if(formulaBox.style.display==='none' && finishBox.style.display==='block'){
+    const levelRect=levelBar.getBoundingClientRect();
+    const finishRect=finishBox.getBoundingClientRect();
+    const gap=Math.max(0, Math.round(finishRect.top - levelRect.bottom));
+    row.style.marginTop=(gap + 28) + 'px';
+  }else{
+    row.style.marginTop='0px';
   }
 }
 
-async function syncResultsFromServer(){
-  try{
-    const res=await fetch('/api/results',{cache:'no-store'});
-    if(!res.ok) throw new Error('Cannot fetch results');
-    const data=await res.json();
-    if(Array.isArray(data)){
-      localStorage.setItem('khkt',JSON.stringify(data));
-      localStorage.setItem(SERVER_RESULTS_KEY,JSON.stringify(data));
-      return data;
-    }
-  }catch(error){
-    console.warn('Không đồng bộ được dữ liệu server:',error);
-  }
-  return JSON.parse(localStorage.getItem('khkt')||'[]');
-}
 
-const APP_STATE_KEY="khkt_ui_state";
+const APP_STATE_KEY="sangtaottnnd_ui_state";
 let currentStudentDetailOpen=false;
 let teacherLoggedIn=false;
+let selectedStudentAccountKeys=[];
 
 let activeCommentKey="";
+let latestImportedStudentAccountKeys=[];
+let latestImportedStudentSourceFileName="";
 let currentLevel3Pairs=[];
 let currentLevel3WrongTemplates=[];
 let currentLevel4Pairs=[];
@@ -917,7 +1702,17 @@ let combo=0;
 let celebrationDone=false;
 let attemptSaved=false;
 let gameSessionActive=false;
+let pendingWrongCards=[];
+let wrongHighlightTimer=null;
+let lastSavedAttemptRecord=null;
+let currentStudentAccount=null;
+let lastCompletedRankText="---";
 
+const STORAGE_RESULTS_KEY="sangtaottnnd";
+const STORAGE_COMMENTS_KEY="sangtaottnnd_comments";
+const STORAGE_TEACHER_KEY="sangtaottnnd_teacher_accounts";
+const STORAGE_STUDENT_KEY="sangtaottnnd_student_accounts";
+const DEFAULT_TEACHER_ACCOUNTS=[{username:"teacher",password:"123456",displayName:"Giáo viên mặc định"}];
 const cardTimers=new WeakMap();
 
 const basePairs=[
@@ -937,6 +1732,24 @@ const defaultWrongTemplates=[
 "a³+b²","a²-b³","a²+b³","a³-3ab²-b³","a³+3ab²+b³","(a+b)(a²-ab+b³)",
 "(a-b)(a²+ab+b³)","a²-3ab+b²"
 ];
+
+function unlockAudio(){
+  [clickSound,clapSound,wrongSound].forEach(a=>{
+    a.volume=0;
+    a.play().then(()=>{
+      a.pause();
+      a.currentTime=0;
+      a.volume=1;
+    }).catch(()=>{});
+  });
+}
+
+function safePlay(audio){
+  try{
+    audio.currentTime=0;
+    audio.play().catch(()=>{});
+  }catch(e){}
+}
 
 function normalizeText(value){
   return String(value||"").trim().toLowerCase().replace(/\s+/g," ");
@@ -993,8 +1806,218 @@ function isSameStudentRecord(item,name,className,schoolName){
   return !!(nameMatch && classMatch && schoolMatch);
 }
 
+
+function getTeacherAccounts(){
+  const list=JSON.parse(localStorage.getItem(STORAGE_TEACHER_KEY)||"null");
+  if(Array.isArray(list) && list.length) return list;
+  localStorage.setItem(STORAGE_TEACHER_KEY,JSON.stringify(DEFAULT_TEACHER_ACCOUNTS));
+  return DEFAULT_TEACHER_ACCOUNTS.slice();
+}
+
+function getStudentAccounts(){
+  return JSON.parse(localStorage.getItem(STORAGE_STUDENT_KEY)||"[]");
+}
+
+function setStudentAccounts(data){
+  localStorage.setItem(STORAGE_STUDENT_KEY,JSON.stringify(data||[]));
+}
+function getStudentAccountIdentity(account){
+  return [normalizeLookupText(account && account.name), normalizeClassLookup(account && account.className), normalizeSchoolLookup(account && account.schoolName), normalizeText(account && account.username)].join('|');
+}
+
+function getSelectedStudentAccountSet(){
+  return new Set(selectedStudentAccountKeys||[]);
+}
+
+function syncSelectedStudentAccountKeys(accounts){
+  const valid=new Set((accounts||[]).map(getStudentAccountIdentity));
+  selectedStudentAccountKeys=(selectedStudentAccountKeys||[]).filter(key=>valid.has(key));
+}
+
+function formatDateTime(ts){
+  const n=Number(ts)||0;
+  if(!n) return "---";
+  return new Date(n).toLocaleString('vi-VN');
+}
+
+function getCurrentPlayMode(){
+  return document.getElementById('playMode') ? document.getElementById('playMode').value : 'individual';
+}
+
+function setInputsLocked(locked){
+  ['studentName','className','schoolName'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.disabled=!!locked;
+  });
+}
+
+function applyStudentAccountToInputs(account){
+  currentStudentAccount=account||null;
+  const nameEl=document.getElementById('studentName');
+  const classEl=document.getElementById('className');
+  const schoolEl=document.getElementById('schoolName');
+  if(account){
+    setInputsLocked(false);
+    nameEl.value=account.name||'';
+    classEl.value=account.className||'';
+    schoolEl.value=account.schoolName||'';
+  }else{
+    nameEl.value='';
+    classEl.value='';
+    schoolEl.value='';
+    setInputsLocked(true);
+  }
+  handleStudentNameInput();
+  handleSchoolNameInput();
+  toggleViewCommentButton();
+  updateStudentAuthUi();
+}
+
+function updateStudentAuthUi(){
+  const loginBtn=document.getElementById('studentLoginBtn');
+  const createBtn=document.getElementById('studentCreateBtn');
+  const logoutBtn=document.getElementById('studentLogoutBtn');
+  const changeBtn=document.getElementById('studentChangePassBtn');
+  if(loginBtn) loginBtn.style.display=currentStudentAccount ? 'none' : 'inline-block';
+  if(createBtn) createBtn.style.display=currentStudentAccount ? 'none' : 'inline-block';
+  if(logoutBtn) logoutBtn.style.display=currentStudentAccount ? 'inline-block' : 'none';
+  if(changeBtn) changeBtn.style.display=currentStudentAccount ? 'inline-block' : 'none';
+}
+
+function getAttemptRankingInfo(attempt){
+  const level=Number(attempt && attempt.level)||1;
+  const rows=getAllResults().filter(item=>Number(item.level)===level);
+  const scored=rows.slice().sort((a,b)=>{
+    const completedDiff=(b.completed===true)-(a.completed===true);
+    if(completedDiff!==0) return completedDiff;
+    const scoreDiff=(getEffectiveScore(b)-getEffectiveScore(a));
+    if(scoreDiff!==0) return scoreDiff;
+    const correctDiff=getEffectiveCorrectPairs(b)-getEffectiveCorrectPairs(a);
+    if(correctDiff!==0) return correctDiff;
+    const wrongDiff=getEffectiveWrongPairs(a)-getEffectiveWrongPairs(b);
+    if(wrongDiff!==0) return wrongDiff;
+    const timeA=Number(a.time)||0;
+    const timeB=Number(b.time)||0;
+    if(Number(a.timeLimit)>0 || Number(b.timeLimit)>0){
+      if(timeB!==timeA) return timeB-timeA;
+    }else if(timeA!==timeB){
+      return timeA-timeB;
+    }
+    return (Number(a.playedAt)||0)-(Number(b.playedAt)||0);
+  });
+  const idx=scored.findIndex(item=>Number(item.playedAt||0)===Number(attempt.playedAt||0) && makeStudentKey(item.name,item.className,item.schoolName)===makeStudentKey(attempt.name,attempt.className,attempt.schoolName));
+  return {rank:idx>=0 ? idx+1 : scored.length,total:scored.length};
+}
+
+function getSmartWrongHint(a,b){
+  if(a.card.type==='wrong' || b.card.type==='wrong'){
+    return `❌ Bạn vừa chọn ít nhất 1 thẻ nhiễu. Hãy ưu tiên ghép 2 vế thật sự thuộc cùng một hằng đẳng thức.`;
+  }
+  if(a.card.name && b.card.name && a.card.name!==b.card.name){
+    return `❌ Chưa đúng. Thẻ 1 thuộc "${a.card.name}", còn thẻ 2 thuộc "${b.card.name}". Hãy ghép 2 vế của cùng một hằng đẳng thức.`;
+  }
+  const pair=getCurrentPairs().find(p=>p[0]===a.card.text || p[1]===a.card.text || p[0]===b.card.text || p[1]===b.card.text);
+  if(pair){
+    return `❌ Chưa đúng. Gợi ý: hãy nhớ công thức ${pair[3]} để tìm nửa còn lại phù hợp.`;
+  }
+  return '❌ Chưa đúng. Hãy đối chiếu lại 2 vế và dấu của công thức trước khi ghép.';
+}
+
+function getClassBattleLeaderboard(){
+  const rows=getAllResults().filter(item=>item.playMode==='class_battle');
+  const map=new Map();
+  rows.forEach(item=>{
+    const className=String(item.className||'Chưa rõ lớp').trim()||'Chưa rõ lớp';
+    if(!map.has(className)){
+      map.set(className,{className,totalAttempts:0,totalScore:0,completed:0,students:new Set()});
+    }
+    const row=map.get(className);
+    row.totalAttempts++;
+    row.totalScore+=getEffectiveScore(item);
+    if(item.completed) row.completed++;
+    row.students.add(makeStudentKey(item.name,item.className,item.schoolName));
+  });
+  return Array.from(map.values()).map(item=>({
+    className:item.className,
+    totalAttempts:item.totalAttempts,
+    totalScore:item.totalScore,
+    completed:item.completed,
+    studentCount:item.students.size,
+    avgScore:item.totalAttempts ? (item.totalScore/item.totalAttempts) : 0
+  })).sort((a,b)=>b.totalScore-a.totalScore || b.completed-a.completed || b.avgScore-a.avgScore || a.className.localeCompare(b.className,'vi',{sensitivity:'base'}));
+}
+
+function renderClassBattleBox(){
+  const box=document.getElementById('classBattleBox');
+  if(!box) return;
+  const leaderboard=getClassBattleLeaderboard();
+  if(!leaderboard.length){
+    box.innerHTML='<div class="class-battle-card"><h3>🏫 THI ĐẤU THEO LỚP</h3><div>Chưa có dữ liệu thi đấu theo lớp.</div></div>';
+    return;
+  }
+  box.innerHTML=`<div class="class-battle-card"><h3>🏫 Bảng xếp hạng thi đấu theo lớp</h3><div class="leaderboard-list">${leaderboard.map((item,index)=>`<div class="leaderboard-item"><div><b>Hạng ${index+1}: ${escapeHtml(item.className)}</b><br>Số học sinh: ${item.studentCount} | Lượt thi đấu: ${item.totalAttempts} | Hoàn thành: ${item.completed}</div><div><b>${item.totalScore}</b> điểm<br>TB: ${item.avgScore.toFixed(1)}</div></div>`).join('')}</div></div>`;
+}
+
+function renderAccountManager(){
+  const box=document.getElementById('accountManagerBox');
+  if(!box) return;
+  const accounts=getStudentAccounts().sort((a,b)=>String(a.className||'').localeCompare(String(b.className||''),'vi',{sensitivity:'base'}) || String(a.name||'').localeCompare(String(b.name||''),'vi',{sensitivity:'base'}));
+  syncSelectedStudentAccountKeys(accounts);
+  const selectedSet=getSelectedStudentAccountSet();
+  const allSelected=accounts.length>0 && accounts.every(item=>selectedSet.has(getStudentAccountIdentity(item)));
+  box.innerHTML=`<div class="account-manager-card"><h3>👥 Quản lý tài khoản học sinh</h3>
+    <div class="account-grid">
+      <input id="newAccountName" placeholder="Họ tên học sinh">
+      <input id="newAccountClass" placeholder="Lớp">
+      <input id="newAccountSchool" placeholder="Trường">
+    </div>
+    <div class="account-inline-row">
+      <input id="newAccountUser" class="account-user" placeholder="Tài khoản">
+      <input id="newAccountPass" class="account-pass" type="password" placeholder="Mật khẩu">
+      <button onclick="createStudentAccount()">Cấp tài khoản</button>
+      <button onclick="resetStudentAccountUsername()">Cấp lại tài khoản</button>
+      <button onclick="resetStudentAccountPassword()">Cấp lại mật khẩu</button>
+    </div>
+    <div class="account-import-box">
+      <div class="account-import-title">Nhập danh sách từ file</div>
+      <div class="file-picker-row">
+        <button type="button" onclick="downloadStudentAccountTemplate()">Mẫu danh sách</button>
+        <button type="button" onclick="openStudentAccountUploadModal()">Chọn tệp</button>
+        <span id="studentAccountFileName" class="file-name-text">${escapeHtml(latestImportedStudentSourceFileName || 'Chưa chọn tệp nào')}</span>
+        <button onclick="downloadLatestImportedStudentAccounts()">Tải danh sách</button>
+      </div>
+      <div style="margin-top:12px;color:#475569;line-height:1.6;">Chỉ cho phép các tệp PDF, Word (.doc hoặc .docx), Excel (.xls hoặc .xlsx). Sau khi chọn tệp và tải lên, giáo viên có thể nhấp “Tải danh sách” để tải file Excel chứa Họ tên, Lớp, Trường, Tài khoản, Mật khẩu dưới dạng text.</div>
+    </div>
+    <div class="account-bulk-bar">
+      <div class="account-actions-row" style="margin-top:0;">
+        <button onclick="toggleSelectAllStudentAccounts()">${allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}</button>
+        <button class="delete-btn" onclick="deleteSelectedStudentAccounts()">Xóa tất cả</button>
+      </div>
+      <div>Đã chọn: <b>${selectedSet.size}</b> tài khoản</div>
+    </div>
+    <div class="account-table-wrap">
+      <table class="account-table">
+        <thead><tr><th>Học sinh</th><th>Lớp / Trường</th><th>Tài khoản</th><th>Mật khẩu</th><th>Cập nhật</th><th>Thao tác</th><th class="checkbox-head">Chọn</th></tr></thead>
+        <tbody>${accounts.length ? accounts.map((a,index)=>{
+          const accountKey=getStudentAccountIdentity(a);
+          return `<tr>
+            <td>${escapeHtml(a.name||'')}</td>
+            <td>${escapeHtml(a.className||'')}<br>${escapeHtml(a.schoolName||'')}</td>
+            <td>${escapeHtml(a.username||'')}</td>
+            <td>${escapeHtml(a.password||'')}</td>
+            <td>${formatDateTime(a.updatedAt||a.createdAt)}</td>
+            <td><button class="delete-btn" onclick="deleteStudentAccountByIndex(${index})">Xóa tài khoản</button></td>
+            <td class="checkbox-cell"><input type="checkbox" class="account-check" ${selectedSet.has(accountKey)?'checked':''} onchange="toggleStudentAccountSelection(${index})"></td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="7">Chưa có tài khoản học sinh.</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+  initPasswordToggles();
+}
+
 function getAllResults(){
-  return (JSON.parse(localStorage.getItem("khkt"))||[]).map(normalizeStoredAttempt);
+  return (JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[]).map(normalizeStoredAttempt);
 }
 
 function getUniqueStudentRecords(){
@@ -1094,12 +2117,27 @@ function getExactStudentLevelSummaries(name,className,schoolName){
   return Object.values(byLevel).sort((a,b)=>(Number(a.level)||1)-(Number(b.level)||1));
 }
 
+function getExactStudentAttemptsByLevel(name,className,schoolName){
+  const attempts=getExactStudentAttempts(name,className,schoolName);
+  const groups={};
+  attempts.forEach(item=>{
+    const level=Number(item.level)||1;
+    if(!groups[level]) groups[level]=[];
+    groups[level].push(item);
+  });
+
+  return Object.keys(groups).map(level=>({
+    level:Number(level)||1,
+    attempts:groups[level].sort((a,b)=>(Number(b.playedAt)||0)-(Number(a.playedAt)||0))
+  })).sort((a,b)=>a.level-b.level);
+}
+
 function getCommentStore(){
-  return JSON.parse(localStorage.getItem("khkt_comments"))||{};
+  return JSON.parse(localStorage.getItem(STORAGE_COMMENTS_KEY))||{};
 }
 
 function setCommentStore(data){
-  localStorage.setItem("khkt_comments",JSON.stringify(data));
+  localStorage.setItem(STORAGE_COMMENTS_KEY,JSON.stringify(data));
 }
 
 function findStudentComment(name,className,schoolName,level){
@@ -1110,6 +2148,36 @@ function findStudentComment(name,className,schoolName,level){
   }
   const legacyKey=makeStudentKey(name,className,schoolName);
   return comments[legacyKey] || "";
+}
+
+function makeAttemptCommentKey(item){
+  return [
+    makeStudentKey(item.name,item.className,item.schoolName),
+    Number(item.level)||1,
+    Number(item.playedAt)||0
+  ].join("|");
+}
+
+function getAttemptCommentStore(){
+  return JSON.parse(localStorage.getItem("STORAGE_ATTEMPT_COMMENTS_KEY"))||{};
+}
+
+function setAttemptCommentStore(data){
+  localStorage.setItem("STORAGE_ATTEMPT_COMMENTS_KEY", JSON.stringify(data));
+}
+
+function findAttemptComment(item){
+  if(!item) return "";
+  const store=getAttemptCommentStore();
+  return store[makeAttemptCommentKey(item)] || "";
+}
+
+function setAttemptComment(item, commentText){
+  if(!item) return;
+  const store=getAttemptCommentStore();
+  const key=makeAttemptCommentKey(item);
+  store[key]=String(commentText||"").trim();
+  setAttemptCommentStore(store);
 }
 
 function getEffectiveCorrectPairs(item){
@@ -1141,7 +2209,7 @@ function normalizeStoredAttempt(item){
 }
 
 function getStudentAttempts(name,className,schoolName){
-  const data=JSON.parse(localStorage.getItem("khkt"))||[];
+  const data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
   const inputName=normalizeLookupText(name);
   const inputClass=normalizeClassLookup(className);
   const inputSchool=normalizeSchoolLookup(schoolName);
@@ -1224,7 +2292,9 @@ function buildUiState(){
     className:document.getElementById("className").value||"",
     schoolName:document.getElementById("schoolName").value||"",
     currentLevel:currentLevel||1,
+    playMode:getCurrentPlayMode(),
     teacherLoggedIn:!!teacherLoggedIn,
+    currentStudentUsername:currentStudentAccount ? currentStudentAccount.username : "",
     teacherPanelVisible:document.getElementById("teacherPanel").style.display==="block",
     studentDetailOpen:!!currentStudentDetailOpen
   };
@@ -1250,12 +2320,18 @@ function restoreUiState(){
   document.getElementById("schoolName").value=state.schoolName||"";
 
   const level=Number(state.currentLevel)||1;
+  if(document.getElementById("playMode")) document.getElementById("playMode").value=state.playMode||"individual";
   const btns=document.querySelectorAll(".level-btn");
   if(btns[level-1]) setLevel(level,btns[level-1]);
 
   handleStudentNameInput();
   handleSchoolNameInput();
   toggleViewCommentButton();
+
+  if(state.currentStudentUsername){
+    const acc=getStudentAccounts().find(item=>String(item.username||"").trim()===String(state.currentStudentUsername||"").trim());
+    if(acc) applyStudentAccountToInputs(acc);
+  }
 
   if(state.teacherLoggedIn || state.teacherPanelVisible){
     teacherLoggedIn=true;
@@ -1292,13 +2368,13 @@ function showStudentComment(){
   const name=document.getElementById("studentName").value.trim();
   const className=document.getElementById("className").value.trim();
   const schoolName=document.getElementById("schoolName").value.trim();
-  const attempts=getExactStudentLevelSummaries(name,className,schoolName);
+  const levelGroups=getExactStudentAttemptsByLevel(name,className,schoolName);
 
   if(!name || !className || !schoolName){
     alert("Vui lòng nhập đầy đủ họ tên, lớp và trường.");
     return;
   }
-  if(attempts.length===0){
+  if(levelGroups.length===0){
     alert("Học sinh này chưa có dữ liệu chơi game.");
     toggleViewCommentButton();
     return;
@@ -1307,29 +2383,44 @@ function showStudentComment(){
   document.getElementById("studentCommentInfo").innerHTML=
     `<b>Học sinh:</b> ${escapeHtml(name)}<br><b>Lớp:</b> ${escapeHtml(className)}<br><b>Trường:</b> ${escapeHtml(schoolName)}`;
 
-  const contentHtml=attempts.map(item=>{
-    const comment=findStudentComment(item.name,item.className,item.schoolName,item.level) || findStudentComment(name,className,schoolName,item.level);
+  const contentHtml=levelGroups.map(group=>{
+    const attemptsHtml=group.attempts.map((item,index)=>{
+      const attemptComment=findAttemptComment(item) || "Chưa có nhận xét";
+      return `
+        <div style="margin-top:${index===0 ? "8px" : "12px"};padding:10px 12px;background:#ffffff;border:1px solid #dbeafe;border-radius:10px;">
+          <div><b>Lần chơi ${group.attempts.length-index}:</b> ${formatDateTime(item.completedAt||item.playedAt)}</div>
+          <div><b>Thời gian:</b> ${Number(item.time)||0}${item.timeLimit>0 ? " giây còn lại" : " giây"}</div>
+          <div><b>Số cặp ghép đúng:</b> ${getEffectiveCorrectPairs(item)}</div>
+          <div><b>Số cặp ghép sai:</b> ${getEffectiveWrongPairs(item)}</div>
+          <div><b>Số điểm:</b> ${getEffectiveScore(item)}</div>
+          <div><b>Nhận xét của giáo viên:</b> ${escapeHtml(attemptComment).replace(/\n/g,"<br>")}</div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="lesson-btn" onclick='showReviewResultByPlayedAt(${JSON.stringify(name)},${JSON.stringify(className)},${JSON.stringify(schoolName)},${Number(group.level)||1},${Number(item.playedAt)||0})'>Xem lại kết quả</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
     return `
       <div class="level-detail-card">
-        <h4>🎮 Cấp độ ${Number(item.level)||1}</h4>
-        <div><b>Thời gian:</b> ${Number(item.time)||0}${item.timeLimit>0 ? " giây còn lại" : " giây"}</div>
-        <div><b>Số cặp ghép đúng:</b> ${getEffectiveCorrectPairs(item)}</div>
-        <div><b>Số cặp ghép sai:</b> ${getEffectiveWrongPairs(item)}</div>
-        <div><b>Số điểm:</b> ${getEffectiveScore(item)}</div>
-        <div><b>Nhận xét của giáo viên:</b> ${comment ? escapeHtml(comment).replace(/\\n/g,"<br>") : "Chưa có nhận xét"}</div>
+        <h4>🎮 Cấp độ ${group.level}</h4>
+        ${attemptsHtml}
       </div>
     `;
   }).join("");
 
   document.getElementById("studentCommentContent").innerHTML=contentHtml || '<div class="level-detail-empty">Chưa có dữ liệu theo cấp độ.</div>';
+  closeReviewResultModal();
   document.getElementById("studentCommentModal").classList.add("show");
   currentStudentDetailOpen=true;
+  closeReviewResultModal();
   saveUiState();
 }
 
 
 function closeStudentCommentModal(){
   document.getElementById("studentCommentModal").classList.remove("show");
+  closeReviewResultModal();
   currentStudentDetailOpen=false;
   saveUiState();
 }
@@ -1364,6 +2455,7 @@ function updateLevelLockState(){
 
 function setGameSessionActive(active){
   gameSessionActive=!!active;
+  document.body.classList.toggle("game-active", gameSessionActive);
   updateLevelLockState();
 }
 
@@ -1379,11 +2471,21 @@ function setLevel(level,btn){
   updateInfoBar();
   document.querySelectorAll(".level-btn").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
+  saveUiState();
 }
 
 function updateInfoBar(){
   document.getElementById("comboText").innerText=combo;
   document.getElementById("livesText").innerText=(lives>=999) ? "∞" : lives;
+  document.getElementById("rankText").innerText=lastCompletedRankText||"---";
+}
+
+function triggerRankBlink(){
+  const rankEl=document.getElementById('rankText');
+  if(!rankEl) return;
+  rankEl.classList.remove('rank-blink');
+  void rankEl.offsetWidth;
+  rankEl.classList.add('rank-blink');
 }
 
 function shuffle(array){
@@ -1626,6 +2728,58 @@ function clearAllCardTimers(){
 function setCardCountdown(el,value,show){
   const badge=el.querySelector(".countdown-badge");
   if(!badge) return;
+
+  if(currentLevel===6 || currentLevel===7){
+    const cardBack=el.querySelector(".card-back");
+    if(cardBack && badge.parentElement!==cardBack){
+      cardBack.appendChild(badge);
+    }
+
+    badge.style.position="absolute";
+    badge.style.top="6px";
+    badge.style.left="8px";
+    badge.style.right="auto";
+    badge.style.bottom="auto";
+    badge.style.transform="none";
+    badge.style.fontSize="11px";
+    badge.style.lineHeight="1";
+    badge.style.color="#ef4444";
+    badge.style.background="transparent";
+    badge.style.borderRadius="0";
+    badge.style.padding="0";
+    badge.style.margin="0";
+    badge.style.minWidth="auto";
+    badge.style.width="auto";
+    badge.style.height="auto";
+    badge.style.boxShadow="none";
+    badge.style.zIndex="6";
+    badge.style.pointerEvents="none";
+    badge.style.alignItems="flex-start";
+    badge.style.justifyContent="flex-start";
+  }else{
+    badge.style.position="";
+    badge.style.top="";
+    badge.style.left="";
+    badge.style.right="";
+    badge.style.bottom="";
+    badge.style.transform="";
+    badge.style.fontSize="";
+    badge.style.lineHeight="";
+    badge.style.color="";
+    badge.style.background="";
+    badge.style.borderRadius="";
+    badge.style.padding="";
+    badge.style.margin="";
+    badge.style.minWidth="";
+    badge.style.width="";
+    badge.style.height="";
+    badge.style.boxShadow="";
+    badge.style.zIndex="";
+    badge.style.pointerEvents="";
+    badge.style.alignItems="";
+    badge.style.justifyContent="";
+  }
+
   if(show){
     badge.textContent=String(value);
     badge.classList.add("show");
@@ -1702,8 +2856,10 @@ function resetGameState(){
   combo=0;
   celebrationDone=false;
   attemptSaved=false;
+  lastCompletedRankText="---";
   setGameSessionActive(false);
   clearAllCardTimers();
+  clearPendingWrongHighlight();
 
   const cfg=getLevelConfig(currentLevel);
   timeLimit=cfg.timeLimit;
@@ -1713,16 +2869,19 @@ function resetGameState(){
   document.getElementById("comboText").innerText="0";
   updateInfoBar();
   document.getElementById("time").innerText=(timeLimit>0 ? timeLimit : 0);
+  document.getElementById("formulaBox").style.display="block";
   document.getElementById("formulaBox").innerText="📘 Hằng đẳng thức sẽ hiển thị tại đây";
   document.getElementById("finishBox").style.display="none";
   document.getElementById("finishBox").innerHTML="";
+  updateBottomActionRowSpacing();
+  resetFinishBoxOverlay();
   hideCelebration();
   clearInterval(timer);
   updateInfoBar();
 }
 
 function saveAttempt(completed,statusText){
-  if(attemptSaved) return;
+  if(attemptSaved) return lastSavedAttemptRecord;
   attemptSaved=true;
 
   const name=document.getElementById("studentName").value.trim();
@@ -1730,11 +2889,12 @@ function saveAttempt(completed,statusText){
   const schoolName=document.getElementById("schoolName").value.trim();
   const timeValue=parseInt(document.getElementById("time").innerText,10)||0;
 
-  let data=JSON.parse(localStorage.getItem("khkt"))||[];
+  let data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
   const safeCorrectPairs=Math.max(correctCount, currentMatchedPairs.length, currentAttemptPairs.filter(p=>p && p.status==="correct").length);
   const safeWrongPairs=Math.max(wrongPairCount, currentAttemptPairs.filter(p=>p && p.status==="wrong").length);
   const safeScore=safeCorrectPairs*10;
-  const attemptPayload={
+  const nowTs=Date.now();
+  const attemptRecord={
     name,className,schoolName,
     score:safeScore,
     time:timeValue,
@@ -1748,13 +2908,17 @@ function saveAttempt(completed,statusText){
     timeLimit:timeLimit,
     matchedPairs:currentMatchedPairs.slice(),
     attemptPairs:currentAttemptPairs.slice(),
-    playedAt:Date.now()
+    answerPairs:getCurrentPairs().map(pair=>[pair[0],pair[1],pair[2],pair[3]]),
+    playedAt:nowTs,
+    completedAt:completed ? nowTs : null,
+    playMode:getCurrentPlayMode(),
+    username:currentStudentAccount ? currentStudentAccount.username : ""
   };
-
-  data.push(attemptPayload);
-  localStorage.setItem("khkt",JSON.stringify(data));
+  data.push(attemptRecord);
+  lastSavedAttemptRecord=attemptRecord;
+  localStorage.setItem(STORAGE_RESULTS_KEY,JSON.stringify(data));
   toggleViewCommentButton();
-  saveResultToServer(attemptPayload);
+  return attemptRecord;
 }
 
 function startGame(){
@@ -1764,8 +2928,12 @@ function startGame(){
   const className=document.getElementById("className").value.trim();
   const schoolName=document.getElementById("schoolName").value.trim();
 
-  if(!name){
-    alert("Nhập tên học sinh");
+  if(!currentStudentAccount){
+    alert("Vui lòng đăng nhập học sinh trước khi chơi.");
+    return;
+  }
+  if(!name || !className || !schoolName){
+    alert("Vui lòng nhập đầy đủ họ tên, lớp và trường.");
     return;
   }
 
@@ -1796,8 +2964,11 @@ function startGame(){
         lockBoard=true;
         setGameSessionActive(false);
         saveAttempt(false,"Hết giờ");
-        alert("⏰ Hết giờ!");
+        safePlay(wrongSound);
+        alert("Hết giờ");
         document.getElementById("formulaBox").innerText="❌ Bạn đã hết thời gian.";
+        interruptAndSpeakVietnameseMale("Hết giờ rồi");
+        renderFinishBox(false,"Hết giờ");
         return;
       }
     }else{
@@ -1832,6 +3003,7 @@ function createCardElement(card){
 
   wrap.appendChild(div);
   wrap.onmouseenter=()=>{
+    if(!gameSessionActive) return;
     safePlay(clickSound);
     if(div.classList.contains("correct") || div.classList.contains("selected")) return;
 
@@ -1864,6 +3036,7 @@ function createCardElement(card){
 }
 
 function createBoard(){
+  clearPendingWrongHighlight();
   const gameBoard=document.getElementById("gameBoard");
   gameBoard.innerHTML="";
   let tempRow=[];
@@ -1888,14 +3061,43 @@ function flipCardOpen(el){ el.classList.add("flipped"); }
 function flipCardClose(el){ el.classList.remove("flipped"); }
 function removeFromSelected(el){ selected=selected.filter(item=>item.el!==el); }
 
+function clearPendingWrongHighlight(){
+  if(wrongHighlightTimer){
+    clearTimeout(wrongHighlightTimer);
+    wrongHighlightTimer=null;
+  }
+  if(!pendingWrongCards.length) return;
+
+  pendingWrongCards.forEach(item=>{
+    if(!item || !item.el) return;
+    clearCardTimer(item.el);
+    item.el.classList.remove("wrong");
+    item.el.classList.remove("selected");
+
+    if(!item.el.classList.contains("correct")){
+      if(currentLevel>=1 && currentLevel<=4){
+        item.el.classList.add("flipped");
+      }else{
+        flipCardClose(item.el);
+      }
+    }
+  });
+
+  pendingWrongCards=[];
+  selected=[];
+}
+
 function finishLoseByLives(){
   clearInterval(timer);
   clearAllCardTimers();
   lockBoard=true;
   setGameSessionActive(false);
   saveAttempt(false,"Hết mạng");
-  document.getElementById("formulaBox").innerText="💀 Bạn đã hết mạng.";
-  alert("💀 Bạn đã hết mạng. Trò chơi kết thúc!");
+  document.getElementById("formulaBox").innerText="💀 Bạn đã ghép sai nhiều lần.";
+  safePlay(wrongSound);
+  alert("Bạn đã ghép sai nhiều lần");
+  interruptAndSpeakVietnameseMale("Bạn hết lượt ghép rồi");
+  renderFinishBox(false,"Hết mạng");
 }
 
 function pauseGameByWrongLimit(limit){
@@ -1918,6 +3120,7 @@ function handleCorrectMatch(a,b){
 
   document.getElementById("formulaBox").innerHTML=
     `✅ <span style="font-weight:bold">${a.card.name}:</span> ${a.card.formula}`;
+  interruptAndSpeakVietnameseMale(`Bạn đúng rồi. ${a.card.name}`);
 
   combo++;
   const pairRecord={
@@ -1943,12 +3146,50 @@ function handleCorrectMatch(a,b){
   setTimeout(()=>checkFinish(),250);
 }
 
+
+function getSmartWrongHint(a,b){
+  const left=String((a&&a.card&&a.card.text)||"");
+  const right=String((b&&b.card&&b.card.text)||"");
+  const pair=[left,right];
+  const has=(s)=>pair.includes(s);
+  const hasPart=(s)=>pair.some(t=>String(t).includes(s));
+
+  if((has("(a+b)²") && hasPart("a²-2ab+b²")) || (has("(a-b)²") && hasPart("a²+2ab+b²"))){
+    return "💡 Gợi ý: Em đang nhầm dấu của hạng tử giữa. Bình phương của tổng là +2ab, còn bình phương của hiệu là -2ab.";
+  }
+  if((has("(a+b)³") && (hasPart("a³+2a²b") || hasPart("+ab²") || hasPart("-b³"))) ||
+     (has("(a-b)³") && (hasPart("a³-2a²b") || hasPart("-3ab²") || hasPart("+b³")))){
+    return "💡 Gợi ý: Với hằng đẳng thức lập phương, em cần nhớ hệ số 1-3-3-1 và chú ý quy luật dấu của từng hạng tử.";
+  }
+  if((has("a²-b²") && (hasPart("a²+ab+b²") || hasPart("a²-ab+b²") || hasPart("(a+b)(a²") || hasPart("(a-b)(a²")))){
+    return "💡 Gợi ý: Hiệu hai bình phương phải tách thành tích hai nhân tử liên hợp: (a-b)(a+b).";
+  }
+  if((has("a³+b³") && hasPart("a²+ab+b²")) || (has("a³-b³") && hasPart("a²-ab+b²"))){
+    return "💡 Gợi ý: Tổng hai lập phương đi với (a²-ab+b²), còn hiệu hai lập phương đi với (a²+ab+b²).";
+  }
+  if(has("(a+b)²") || has("(a-b)²")){
+    return "💡 Gợi ý: Hãy kiểm tra dạng bình phương của một tổng hoặc bình phương của một hiệu và đối chiếu dấu ở hạng tử giữa.";
+  }
+  if(has("(a+b)³") || has("(a-b)³")){
+    return "💡 Gợi ý: Hãy kiểm tra dạng lập phương. Em nên so lại đủ 4 hạng tử và hệ số 3 ở hai hạng tử giữa.";
+  }
+  if(has("a²-b²")){
+    return "💡 Gợi ý: Hãy nhớ công thức hiệu hai bình phương: a²-b² = (a-b)(a+b).";
+  }
+  if(has("a³+b³") || has("a³-b³")){
+    return "💡 Gợi ý: Hãy nhớ dạng tổng - hiệu hai lập phương, đặc biệt là dấu của hạng tử ab trong ngoặc thứ hai.";
+  }
+  return "💡 Gợi ý: Hai thẻ này chưa cùng một hằng đẳng thức. Em hãy đối chiếu lại tên công thức, dấu và hệ số của các hạng tử.";
+}
+
 function handleWrongMatch(a,b){
   safePlay(wrongSound);
   const cfg=getLevelConfig(currentLevel);
+  const wrongHintText=getSmartWrongHint(a,b);
+  document.getElementById("formulaBox").innerText=wrongHintText;
+  interruptAndSpeakVietnameseMale(wrongHintText);
 
-  a.el.classList.add("wrong");
-  b.el.classList.add("wrong");
+  clearPendingWrongHighlight();
 
   combo=0;
   wrongPairCount++;
@@ -1973,45 +3214,47 @@ function handleWrongMatch(a,b){
     updateInfoBar();
   }
 
-  if(cfg.preflip){
-    setTimeout(()=>{
-      a.el.classList.remove("wrong","selected");
-      b.el.classList.remove("wrong","selected");
-      selected=[];
-      lockBoard=false;
-      if((currentLevel===3 || currentLevel===4 || currentLevel===7) && lives<=0){
-        finishLoseByLives();
-      }
-    },650);
-    return;
-  }
+  a.el.classList.add("wrong","selected");
+  b.el.classList.add("wrong","selected");
 
-  setTimeout(()=>{
-    clearCardTimer(a.el);
-    clearCardTimer(b.el);
+  if(!a.el.classList.contains("flipped")) a.el.classList.add("flipped");
+  if(!b.el.classList.contains("flipped")) b.el.classList.add("flipped");
 
-    a.el.classList.remove("wrong","selected");
-    b.el.classList.remove("wrong","selected");
+  pendingWrongCards=[a,b];
+  selected=[];
+  lockBoard=false;
 
-    if(!a.el.classList.contains("correct")) flipCardClose(a.el);
-    if(!b.el.classList.contains("correct")) flipCardClose(b.el);
+  const wrongBackDelay =
+    currentLevel===5 ? 5000 :
+    currentLevel===6 ? 3000 :
+    currentLevel===7 ? 2000 :
+    4000;
 
-    selected=[];
-    lockBoard=false;
+  wrongHighlightTimer=setTimeout(()=>{
+    clearPendingWrongHighlight();
+
+    if((currentLevel===3 || currentLevel===4 || currentLevel===7) && lives<=0){
+      finishLoseByLives();
+      return;
+    }
 
     if((currentLevel===6 || currentLevel===7) && wrongPairCount>=cfg.maxWrongPairs){
       pauseGameByWrongLimit(cfg.maxWrongPairs);
       return;
     }
-
-    if(currentLevel===7 && lives<=0){
-      finishLoseByLives();
-    }
-  },400);
+  },wrongBackDelay);
 }
 
 function selectCard(el,card){
-  if(lockBoard) return;
+  if(lockBoard || !gameSessionActive) return;
+
+  if(pendingWrongCards.length){
+    const clickedWrongCard=pendingWrongCards.some(item=>item && item.el===el);
+    if(clickedWrongCard){
+      return;
+    }
+  }
+
   if(el.classList.contains("correct")) return;
 
   const cfg=getLevelConfig(currentLevel);
@@ -2100,11 +3343,160 @@ function hideCelebration(){
   overlay.appendChild(msg);
 }
 
+function buildLevelAnswerHtml(activePairs){
+  return `
+    <h3 class="answer-title">📘 ĐÁP ÁN CỦA GAME</h3>
+    <div class="answer-content">
+      ${activePairs.map(p=>`
+        <div class="formula-item">
+          <span class="formula-name">${escapeHtml(p[3])}:</span> ${escapeHtml(p[0])} = ${escapeHtml(p[1])}
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function resetFinishBoxOverlay(){
+  const finishBox=document.getElementById("finishBox");
+  finishBox.classList.remove("overlay-mode");
+  finishBox.style.position="";
+  finishBox.style.top="";
+  finishBox.style.left="";
+  finishBox.style.width="";
+  finishBox.style.maxWidth="";
+  finishBox.style.minHeight="";
+  finishBox.style.maxHeight="";
+}
+
+function positionFinishBoxOverlay(){
+  const finishBox=document.getElementById("finishBox");
+  const gameBoard=document.getElementById("gameBoard");
+  if(!finishBox || !gameBoard || finishBox.style.display==='none') return;
+
+  const startWidthTargets = Array.from(document.querySelectorAll('#levelBar .level-btn')).filter(Boolean);
+
+  let targetLeft = Infinity;
+  let targetRight = -Infinity;
+  startWidthTargets.forEach(el=>{
+    const rect = el.getBoundingClientRect();
+    if(rect.width > 0){
+      targetLeft = Math.min(targetLeft, rect.left);
+      targetRight = Math.max(targetRight, rect.right);
+    }
+  });
+
+  const boardRect=gameBoard.getBoundingClientRect();
+  const finalLeft = Number.isFinite(targetLeft) ? targetLeft : boardRect.left;
+  const finalRight = Number.isFinite(targetRight) ? targetRight : boardRect.right;
+  const finalWidth = Math.max(finalRight - finalLeft, 320);
+
+  finishBox.classList.add("overlay-mode");
+  finishBox.style.top=`${boardRect.top + window.scrollY}px`;
+  finishBox.style.left=`${finalLeft + window.scrollX}px`;
+  finishBox.style.width=`${finalWidth}px`;
+  finishBox.style.maxWidth=`${finalWidth}px`;
+  finishBox.style.minHeight=`${Math.max(gameBoard.offsetHeight, 360)}px`;
+  finishBox.style.maxHeight=`${Math.max(gameBoard.offsetHeight, 360)}px`;
+
+  const header = finishBox.querySelector('.finish-header');
+  const body = finishBox.querySelector('.finish-body');
+  if(header && body){
+    const headerHeight = header.offsetHeight;
+    const available = Math.max((Math.max(gameBoard.offsetHeight, 360) - headerHeight - 22), 220);
+    body.style.maxHeight = `${available}px`;
+  }
+}
+
+window.addEventListener('resize',()=>{
+  const finishBox=document.getElementById("finishBox");
+  if(finishBox && finishBox.style.display!=='none'){
+    positionFinishBoxOverlay();
+  }
+});
+
+function renderFinishBox(completed,statusText){
+  const results=getAllResults().sort((a,b)=>(Number(b.playedAt)||0)-(Number(a.playedAt)||0));
+  const latest=lastSavedAttemptRecord || results[0] || null;
+  const latestLevel=Number(latest && latest.level) || currentLevel;
+  const activePairs=Array.isArray(latest && latest.answerPairs) && latest.answerPairs.length ? latest.answerPairs : getCurrentPairs();
+  const ranking=getAttemptRankingInfo(latest||{level:latestLevel});
+  lastCompletedRankText=`${ranking.rank}/${ranking.total}`;
+  updateInfoBar();
+  if(completed){
+    triggerRankBlink();
+  }
+
+  const finishPlayerName=String(latest && latest.name || document.getElementById("studentName").value || "").trim();
+  const finishPlayerClass=String(latest && latest.className || document.getElementById("className").value || "").trim();
+  const finishPlayerSchool=String(latest && latest.schoolName || document.getElementById("schoolName").value || "").trim();
+  let finishPlayerText=finishPlayerName;
+  if(finishPlayerClass) finishPlayerText+=` - Lớp ${finishPlayerClass}`;
+  if(finishPlayerSchool) finishPlayerText+=` - ${finishPlayerSchool}`;
+
+  const classLeaderboard=getClassBattleLeaderboard();
+  let classBattleHtml='';
+  const latestPlayMode=String(latest && latest.playMode || getCurrentPlayMode() || '');
+  if(latestPlayMode==='class_battle'){
+    const myClass=finishPlayerClass;
+    const classRank=Math.max(1,classLeaderboard.findIndex(item=>String(item.className).trim()===myClass)+1);
+    const totalClasses=Math.max(classLeaderboard.length,1);
+    classBattleHtml=`<p>🏫 Thi đấu theo lớp: <b>${escapeHtml(myClass)}</b> đang xếp <b>hạng ${classRank}/${totalClasses}</b></p>`;
+  }
+
+  const playedTime=String(latest && typeof latest.time!=='undefined' ? latest.time : (document.getElementById("time").innerText||"0"));
+  const latestTimeLimit=Number(latest && latest.timeLimit);
+  const latestScore=Number(latest && typeof latest.score!=='undefined' ? latest.score : scoreValue);
+  const resolvedStatusText=completed ? "Hoàn thành" : String(statusText || (latest && latest.statusText) || "Chưa hoàn thành");
+  const finishEndedAtText=formatDateTime(latest && (latest.completedAt || latest.playedAt) ? (latest.completedAt || latest.playedAt) : Date.now());
+
+  const finishAttemptPairs=Array.isArray(latest && latest.attemptPairs) ? latest.attemptPairs : [];
+  const finishCorrectPairs=finishAttemptPairs.filter(pair=>pair && pair.status==="correct");
+  const finishWrongPairs=finishAttemptPairs.filter(pair=>pair && pair.status==="wrong");
+  const finishCorrectHtml=finishCorrectPairs.length
+    ? finishCorrectPairs.map((pair,idx)=>`<div class="finish-pair-item">${idx+1}. ${escapeHtml(pair.formulaLine || `${pair.left} = ${pair.right}`)}</div>`).join("")
+    : '<div class="finish-pair-item">Chưa có cặp ghép đúng.</div>' ;
+  const finishWrongHtml=finishWrongPairs.length
+    ? finishWrongPairs.map((pair,idx)=>`<div class="finish-pair-item">${idx+1}. ${escapeHtml(pair.formulaLine || `${pair.left} ≠ ${pair.right}`)}</div>`).join("")
+    : '<div class="finish-pair-item">Chưa có cặp ghép sai.</div>' ;
+
+  const finishBox=document.getElementById("finishBox");
+  document.getElementById("formulaBox").style.display="none";
+  finishBox.style.display="block";
+  finishBox.innerHTML=`
+    <div class="finish-header">
+      <h2 class="finish-title">🎉 HOÀN THÀNH BÀI HỌC</h2>
+      <p class="finish-player"><b>${escapeHtml(finishPlayerText)}</b></p>
+    </div>
+    <div class="finish-body">
+      <p class="finish-summary-line">
+        <span>⭐ ${latestScore}</span>
+        <span>🎮 Cấp độ: ${latestLevel}</span>
+        <span>⏱ ${playedTime}${latestTimeLimit>0 ? "s còn lại" : "s"}</span>
+      </p>
+      <p>🏅 Xếp hạng cấp độ vừa chơi: <b>${lastCompletedRankText}</b></p>
+      <p class="finish-summary-line">
+        <span>📌 Trạng thái: <b>${escapeHtml(resolvedStatusText)}</b></span>
+        <span>🕒 Kết thúc lúc: <b>${finishEndedAtText}</b></span>
+      </p>
+      ${classBattleHtml}
+      <div class="finish-section-title correct-title">✅ Các cặp ghép đúng của bạn</div>
+      ${finishCorrectHtml}
+      <div class="finish-section-title wrong-title">❌ Các cặp bạn ghép sai</div>
+      ${finishWrongHtml}
+      ${buildLevelAnswerHtml(activePairs)}
+    </div>
+  `;
+  requestAnimationFrame(()=>{
+    updateBottomActionRowSpacing();
+  });
+  positionFinishBoxOverlay();
+}
+
 function checkFinish(){
-  const activePairs=getCurrentPairs();
   if(correctCount===getCurrentTargetCount()){
     clearInterval(timer);
     clearAllCardTimers();
+    lockBoard=true;
     setGameSessionActive(false);
 
     if(!celebrationDone){
@@ -2112,35 +3504,20 @@ function checkFinish(){
       launchCelebration();
     }
 
-    const finishBox=document.getElementById("finishBox");
-    finishBox.style.display="block";
-    finishBox.innerHTML=`
-      <h2>🎉 HOÀN THÀNH BÀI HỌC</h2>
-      <p><b>${document.getElementById("showName").innerText}</b></p>
-      <p>⭐ ${scoreValue}</p>
-      <p>⏱ ${document.getElementById("time").innerText}${timeLimit>0 ? "s còn lại" : "s"}</p>
-      <p>🎮 Cấp độ: ${currentLevel}</p>
-      <h3>📘 ${activePairs.length} HẰNG ĐẲNG THỨC</h3>
-      ${activePairs.map(p=>`
-        <div class="formula-item">
-          <span class="formula-name">${p[3]}:</span> ${p[2]}
-        </div>
-      `).join("")}
-    `;
     saveAttempt(true,"Hoàn thành");
+    renderFinishBox(true,"Hoàn thành");
   }
 }
 
 function openLessonModal(index){
-  const data=JSON.parse(localStorage.getItem("khkt"))||[];
+  const data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
   const student=normalizeStoredAttempt(data[index]);
   if(!student) return;
 
   document.getElementById("lessonStudentInfo").innerHTML=
-    `<b>Học sinh:</b> ${escapeHtml(student.name||"---")}<br>
-    <b>Lớp:</b> ${escapeHtml(student.className||"---")}<br>
-    <b>Trường:</b> ${escapeHtml(student.schoolName||"---")}<br>
-    <b>Cấp độ:</b> ${student.level||1} | <b>Điểm:</b> ${getEffectiveScore(student)} | <b>Thời gian:</b> ${student.time||0}${student.timeLimit>0 ? " giây còn lại" : " giây"}`;
+    `<div class="lesson-info-line"><b>Học sinh:</b> ${escapeHtml(student.name||"---")} | <b>Lớp:</b> ${escapeHtml(student.className||"---")} | <b>Trường:</b> ${escapeHtml(student.schoolName||"---")}</div>
+    <div class="lesson-info-line"><b>Cấp độ:</b> ${student.level||1} | <b>Điểm:</b> ${getEffectiveScore(student)} | <b>Thời gian:</b> ${student.time||0}${student.timeLimit>0 ? " giây còn lại" : " giây"}</div>
+    <div class="lesson-info-line"><b>Hoàn thành lúc:</b> ${formatDateTime(student.completedAt||student.playedAt)} | <b>Chế độ:</b> ${student.playMode==='class_battle' ? 'Thi đấu theo lớp' : 'Cá nhân'}</div>`;
 
   const attemptPairs=Array.isArray(student.attemptPairs) && student.attemptPairs.length
     ? student.attemptPairs
@@ -2163,18 +3540,89 @@ function openLessonModal(index){
       <div><b>Số cặp ghép đúng:</b> ${getEffectiveCorrectPairs(student)}</div>
       <div><b>Số cặp ghép sai:</b> ${getEffectiveWrongPairs(student)}</div>
       <div><b>Số điểm:</b> ${getEffectiveScore(student)}</div>
+      <div><b>Ngày giờ hoàn thành:</b> ${formatDateTime(student.completedAt||student.playedAt)}</div>
       <div class="lesson-section-title correct-title">✅ Các cặp ghép đúng</div>
       ${correctHtml}
       <div class="lesson-section-title wrong-title">❌ Các cặp ghép chưa đúng</div>
       ${wrongHtml}
     </div>
   `;
+  const lessonScrollY=window.scrollY||window.pageYOffset||0;
+  document.body.style.setProperty("--lesson-lock-top", `-${lessonScrollY}px`);
+  document.body.classList.add("lesson-modal-locked");
+  document.getElementById("lessonModal").dataset.scrollY=String(lessonScrollY);
   document.getElementById("lessonModal").classList.add("show");
 }
 
 function closeLessonModal(){
-  document.getElementById("lessonModal").classList.remove("show");
+  const lessonModal=document.getElementById("lessonModal");
+  const lockedScrollY=Number(lessonModal.dataset.scrollY||0);
+  lessonModal.classList.remove("show");
+  document.body.classList.remove("lesson-modal-locked");
+  document.body.style.removeProperty("--lesson-lock-top");
+  window.scrollTo(0, lockedScrollY);
 }
+
+function showReviewResultByPlayedAt(name,className,schoolName,level,playedAt){
+  document.getElementById("reviewResultModal").classList.remove("show");
+  const attempts=getExactStudentAttempts(name,className,schoolName);
+  const item=attempts.find(row=>(Number(row.level)||1)===(Number(level)||1) && (Number(row.playedAt)||0)===(Number(playedAt)||0));
+  if(!item){
+    alert("Không tìm thấy dữ liệu của lần chơi này.");
+    return;
+  }
+
+  document.getElementById("reviewResultInfo").innerHTML=
+    `<b>Học sinh:</b> ${escapeHtml(name)} &nbsp; | &nbsp; <b>Lớp:</b> ${escapeHtml(className)} &nbsp; | &nbsp; <b>Trường:</b> ${escapeHtml(schoolName)}<br><b>Cấp độ:</b> ${Number(level)||1} &nbsp; | &nbsp; <b>Ngày giờ hoàn thành:</b> ${formatDateTime(item.completedAt||item.playedAt)}`;
+
+  const correctRows=(Array.isArray(item.attemptPairs)?item.attemptPairs:[])
+    .filter(p=>p && p.status==="correct")
+    .map((p,idx)=>`<div style="margin:8px 0;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;"><b>Cặp đúng ${idx+1}:</b> ${escapeHtml(p.formulaLine || `${p.left} = ${p.right}`)}</div>`)
+    .join("");
+
+  const wrongRows=(Array.isArray(item.attemptPairs)?item.attemptPairs:[])
+    .filter(p=>p && p.status==="wrong")
+    .map((p,idx)=>`<div style="margin:8px 0;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;"><b>Lần sai ${idx+1}:</b> ${escapeHtml(p.formulaLine || `${p.left} ≠ ${p.right}`)}</div>`)
+    .join("");
+
+
+  const levelNum=Number(level)||1;
+  const cfg=getLevelConfig(levelNum);
+  const answerPairsSource=(cfg && (cfg.mode==="level6" ? currentLevel6Pairs :
+                                  cfg.mode==="level4" ? currentLevel4Pairs :
+                                  cfg.mode==="level3" ? currentLevel3Pairs :
+                                  basePairs)) || basePairs;
+
+  const answerRows=answerPairsSource.map((pair,idx)=>`<div style="margin:8px 0;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;"><b>Cặp ${idx+1}:</b> ${escapeHtml(pair[0])} = ${escapeHtml(pair[1])}</div>`).join("");
+
+  document.getElementById("reviewResultContent").innerHTML=
+    `<div><b>Điểm:</b> ${getEffectiveScore(item)}</div>
+     <div><b>Số cặp ghép đúng:</b> ${getEffectiveCorrectPairs(item)}</div>
+     <div><b>Số cặp ghép sai:</b> ${getEffectiveWrongPairs(item)}</div>
+     <div><b>Thời gian:</b> ${Number(item.time)||0}${item.timeLimit>0 ? " giây còn lại" : " giây"}</div>
+     <div class="lesson-section-title correct-title">Các cặp ghép đúng của bạn</div>
+     ${correctRows || '<div class="level-detail-empty">Không có cặp đúng được lưu.</div>'}
+     <div class="lesson-section-title wrong-title">Các lần ghép sai của bạn</div>
+     ${wrongRows || '<div class="level-detail-empty">Không có lần ghép sai được lưu.</div>'}
+     <div class="lesson-section-title correct-title">Các cặp ghép đúng của game</div>
+     ${answerRows || '<div class="level-detail-empty">Chưa có đáp án.</div>'}`;
+
+  const modal=document.getElementById("reviewResultModal");
+  modal.classList.remove("show");
+  modal.style.display="none";
+  void modal.offsetWidth;
+  modal.style.display="flex";
+  modal.classList.add("show");
+}
+
+function closeReviewResultModal(){
+  const modal=document.getElementById("reviewResultModal");
+  if(!modal) return;
+  modal.classList.remove("show");
+  modal.style.display="none";
+}
+
+
 
 function openTeacherLogin(){
   document.getElementById("teacherUser").value="";
@@ -2188,14 +3636,14 @@ function closeTeacherLogin(){
   document.getElementById("loginModal").classList.remove("show");
   saveUiState();
 }
-async function teacherLogin(){
+function teacherLogin(){
   const u=document.getElementById("teacherUser").value.trim();
   const p=document.getElementById("teacherPass").value.trim();
-  if(u==="teacher" && p==="123456"){
+  const account=getTeacherAccounts().find(item=>String(item.username||'').trim()===u && String(item.password||'').trim()===p);
+  if(account){
     teacherLoggedIn=true;
     closeTeacherLogin();
     document.getElementById("teacherPanel").style.display="block";
-    await syncResultsFromServer();
     renderTeacherPanel();
     saveUiState();
   }else{
@@ -2203,24 +3651,23 @@ async function teacherLogin(){
   }
 }
 
-function openCommentModal(index){
-  const data=JSON.parse(localStorage.getItem("khkt"))||[];
-  const student=data[index];
-  if(!student) return;
+function openCommentModal(name,className,schoolName,level,attemptRecord){
+  const infoHtml=[
+    `<b>Học sinh:</b> ${escapeHtml(name||"")}`,
+    `<b>Lớp:</b> ${escapeHtml(className||"")}`,
+    `<b>Trường:</b> ${escapeHtml(schoolName||"")}`,
+    `<b>Cấp độ:</b> ${Number(level)||1}`
+  ];
+  if(attemptRecord){
+    infoHtml.push(`<b>Ngày giờ hoàn thành:</b> ${formatDateTime(attemptRecord.completedAt||attemptRecord.playedAt)}`);
+  }
 
-  activeCommentKey=makeStudentLevelKey(student.name,student.className,student.schoolName,student.level);
-
-  document.getElementById("commentStudentInfo").innerHTML=
-    `<b>Học sinh:</b> ${escapeHtml(student.name||"---")}<br>
-    <b>Lớp:</b> ${escapeHtml(student.className||"---")}<br>
-    <b>Trường:</b> ${escapeHtml(student.schoolName||"---")}<br>
-    <b>Điểm:</b> ${student.score||0} | <b>Thời gian:</b> ${student.time||0}${student.timeLimit>0 ? " giây còn lại" : " giây"} | <b>Cấp độ:</b> ${student.level||1}<br>
-    <b>Số cặp đúng:</b> ${student.correctPairs||0}/${student.totalPairs||0} | <b>Mạng còn lại:</b> ${student.livesLeft>=999 ? "∞" : (student.livesLeft||0)} | <b>Combo cao nhất:</b> ${student.maxCombo||0}<br>
-    <b>Kết quả:</b> ${student.completed ? "✅ Hoàn thành" : `❌ ${escapeHtml(student.statusText||"Chưa đúng")}`}`;
-
-  document.getElementById("teacherCommentText").value=findStudentComment(student.name,student.className,student.schoolName,student.level);
+  document.getElementById("commentStudentInfo").innerHTML=infoHtml.join("<br>");
+  const perAttemptComment=attemptRecord ? findAttemptComment(attemptRecord) : "";
+  const levelComment=findStudentComment(name,className,schoolName,level);
+  document.getElementById("teacherCommentText").value=perAttemptComment || levelComment || "";
+  window.activeCommentTarget={name,className,schoolName,level,attemptRecord:attemptRecord||null};
   document.getElementById("commentModal").classList.add("show");
-  setTimeout(()=>document.getElementById("teacherCommentText").focus(),50);
 }
 
 function closeCommentModal(){
@@ -2229,28 +3676,34 @@ function closeCommentModal(){
 }
 
 function saveTeacherComment(){
-  if(!activeCommentKey) return;
-  const text=document.getElementById("teacherCommentText").value.trim();
-  const comments=getCommentStore();
-
-  if(text){
-    comments[activeCommentKey]=text;
-  }else{
-    delete comments[activeCommentKey];
+  const textValue=document.getElementById("teacherCommentText").value.trim();
+  const info=(window.activeCommentTarget||{});
+  if(!info.name || !info.className || !info.schoolName){
+    closeCommentModal();
+    return;
   }
 
+  const comments=getCommentStore();
+  if(info.level!==undefined && info.level!==null && info.level!==""){
+    comments[makeStudentLevelKey(info.name,info.className,info.schoolName,info.level)]=textValue;
+  }else{
+    comments[makeStudentKey(info.name,info.className,info.schoolName)]=textValue;
+  }
   setCommentStore(comments);
+
+  if(info.attemptRecord){
+    setAttemptComment(info.attemptRecord, textValue);
+  }
+
   closeCommentModal();
   renderTeacherPanel();
-  toggleViewCommentButton();
-  alert("Đã lưu nhận xét.");
+  if(currentStudentDetailOpen){
+    showStudentComment();
+  }
 }
 
-async function renderTeacherPanel(){
-  if(teacherLoggedIn){
-    await syncResultsFromServer();
-  }
-  const data=JSON.parse(localStorage.getItem("khkt"))||[];
+function renderTeacherPanel(){
+  const data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
   const normalizedData=data.map(item=>normalizeStoredAttempt(item));
   const resultList=document.getElementById("resultList");
 
@@ -2258,23 +3711,33 @@ async function renderTeacherPanel(){
     resultList.innerHTML="<p>Chưa có kết quả nào.</p>";
     document.getElementById("statsBox").innerHTML="";
     clearChart();
+    renderClassBattleBox();
+    renderAccountManager();
     return;
   }
 
   resultList.innerHTML=normalizedData.map((r,index)=>{
     const hasComment=!!findStudentComment(r.name,r.className,r.schoolName,r.level);
+    const rankInfo=getAttemptRankingInfo(r);
     return `
       <div class="result-item">
-        <div>
-          <b>${escapeHtml(r.name||"---")}</b>
-          ${r.className ? " | Lớp " + escapeHtml(r.className) : ""}
-          ${r.schoolName ? " | " + escapeHtml(r.schoolName) : ""}
-          | 🎮 Cấp ${r.level || 1}
-          | ⭐ ${getEffectiveScore(r)}
-          | ⏱ ${r.time}${r.timeLimit>0 ? "s còn lại" : "s"}
-          | 🧩 ${getEffectiveCorrectPairs(r)}/${r.totalPairs||0}
-          | ${r.completed ? "✅ Hoàn thành" : `❌ ${escapeHtml(r.statusText||"Chưa đúng")}`}
-          ${hasComment ? " | 💬 Đã có nhận xét" : ""}
+        <div class="result-info">
+          <span class="result-main-info">
+            <b>${escapeHtml(r.name||"---")}</b>
+            ${r.className ? " | Lớp " + escapeHtml(r.className) : ""}
+            ${r.schoolName ? " | " + escapeHtml(r.schoolName) : ""}
+            | 🎮 Cấp ${r.level || 1}
+            | ⭐ ${getEffectiveScore(r)}
+            | ⏱ ${r.time}${r.timeLimit>0 ? "s còn lại" : "s"}
+            | 🧩 ${getEffectiveCorrectPairs(r)}/${r.totalPairs||0}
+            | 🏅 ${rankInfo.rank}/${rankInfo.total}
+            | 🕒 ${formatDateTime(r.completedAt||r.playedAt)}
+          </span>
+          <span class="result-sub-info">
+            | ${r.playMode==='class_battle' ? '🏫 Thi đấu theo lớp' : '👤 Cá nhân'}
+            | ${r.completed ? "✅ Hoàn thành" : `❌ ${escapeHtml(r.statusText||"Chưa đúng")}`}
+            ${hasComment ? " | 💬 Đã có nhận xét" : ""}
+          </span>
         </div>
         <div class="result-actions">
           <button class="lesson-btn" onclick="openLessonModal(${index})">Xem bài học sinh</button>
@@ -2286,22 +3749,24 @@ async function renderTeacherPanel(){
   }).join("");
 
   renderStats(normalizedData);
+  renderClassBattleBox();
+  renderAccountManager();
   saveUiState();
 }
 
 function deleteResult(index){
-  let data=JSON.parse(localStorage.getItem("khkt"))||[];
+  let data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
   if(index<0 || index>=data.length) return;
   if(confirm("Bạn có chắc muốn xóa kết quả học sinh này không?")){
     data.splice(index,1);
-    localStorage.setItem("khkt",JSON.stringify(data));
+    localStorage.setItem(STORAGE_RESULTS_KEY,JSON.stringify(data));
     renderTeacherPanel();
   }
 }
 
 function deleteAllResults(){
   if(confirm("Bạn có chắc muốn xóa toàn bộ kết quả học sinh không?")){
-    localStorage.removeItem("khkt");
+    localStorage.removeItem(STORAGE_RESULTS_KEY);
     document.getElementById("teacherPanel").style.display="block";
     renderTeacherPanel();
   }
@@ -2327,6 +3792,7 @@ function renderStats(data){
     <p>Chưa đúng: ${incompleteCount}</p>
     <p>Điểm TB: ${avgScore}</p>
     <p>Thời gian TB: ${avgTime}</p>
+    <p>Lượt thi đấu theo lớp: ${data.filter(d=>d.playMode==='class_battle').length}</p>
   `;
 
   drawPieChartsByLevel(data);
@@ -2433,17 +3899,872 @@ function drawPieChartsByLevel(data){
 }
 
 function exportCSV(){
-  let data=JSON.parse(localStorage.getItem("khkt"))||[];
-  let csv="Ten,Lop,Truong,CapDo,Score,Time,TrangThai\n";
-  data.forEach(d=>{
-    csv+=`"${(d.name||"").replace(/"/g,'""')}","${(d.className||"").replace(/"/g,'""')}","${(d.schoolName||"").replace(/"/g,'""')}",${d.level||1},${d.score},${d.time},"${d.completed ? "Hoan thanh" : "Chua dung"}"\n`;
-  });
-  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="ketqua_khkt.csv";
+  const data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
+  const escapeExcel=(value)=>String(value??'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+
+  const rows=data.map(d=>{
+    const rankInfo=getAttemptRankingInfo(normalizeStoredAttempt(d));
+    const cells=[
+      d.name||'',
+      d.className||'',
+      d.schoolName||'',
+      d.username||'',
+      String(d.level||1),
+      d.playMode==='class_battle' ? 'Thi dau theo lop' : 'Ca nhan',
+      String(d.score??0),
+      String(d.time??0),
+      `${rankInfo.rank}/${rankInfo.total}`,
+      formatDateTime(d.completedAt||d.playedAt),
+      d.completed ? 'Hoan thanh' : 'Chua dung'
+    ];
+    return `<tr>${cells.map(cell=>`<td>${escapeExcel(cell)}</td>`).join('')}</tr>`;
+  }).join('');
+
+  const html=`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="application/vnd.ms-excel; charset=UTF-8">
+<style>
+  table{border-collapse:collapse; width:100%;}
+  th,td{
+    border:1px solid #000;
+    padding:6px 8px;
+    font-family:"Times New Roman", Times, serif;
+    font-size:12pt;
+    mso-number-format:"\@";
+    white-space:nowrap;
+  }
+  th{font-weight:bold;}
+</style>
+</head>
+<body>
+<table>
+  <thead>
+    <tr>
+      <th>Ten</th>
+      <th>Lop</th>
+      <th>Truong</th>
+      <th>TaiKhoan</th>
+      <th>CapDo</th>
+      <th>CheDo</th>
+      <th>Score</th>
+      <th>Time</th>
+      <th>XepHang</th>
+      <th>NgayGioHoanThanh</th>
+      <th>TrangThai</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>
+</body>
+</html>`;
+
+  const blob=new Blob(['﻿',html],{type:'application/vnd.ms-excel;charset=utf-8;'});
+  const a=document.createElement('a');
+  const url=URL.createObjectURL(blob);
+  a.href=url;
+  a.download='ketqua_sangtaottnnd.xls';
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+
+
+function openStudentLogin(){
+  document.getElementById('studentUser').value='';
+  document.getElementById('studentPass').value='';
+  document.getElementById('studentLoginError').innerText='';
+  document.getElementById('studentLoginModal').classList.add('show');
+  setTimeout(()=>document.getElementById('studentUser').focus(),50);
+}
+
+function closeStudentLogin(){
+  document.getElementById('studentLoginModal').classList.remove('show');
+}
+
+function studentLogin(){
+  const username=document.getElementById('studentUser').value.trim();
+  const password=document.getElementById('studentPass').value.trim();
+  const account=getStudentAccounts().find(item=>String(item.username||'').trim()===username && String(item.password||'').trim()===password);
+  if(!account){
+    document.getElementById('studentLoginError').innerText='Sai tài khoản hoặc mật khẩu học sinh.';
+    return;
+  }
+  applyStudentAccountToInputs(account);
+  closeStudentLogin();
+  alert('Đăng nhập học sinh thành công. Bạn có thể bắt đầu chơi.');
+  saveUiState();
+}
+
+function logoutStudent(){
+  if(gameSessionActive){
+    alert('Bạn đang chơi. Hãy hoàn thành hoặc kết thúc lượt chơi trước khi đăng xuất.');
+    return;
+  }
+  currentStudentAccount=null;
+  applyStudentAccountToInputs(null);
+  saveUiState();
+}
+
+function openForgotPasswordModal(){
+  closeStudentLogin();
+  document.getElementById('forgotName').value='';
+  document.getElementById('forgotClass').value='';
+  document.getElementById('forgotSchool').value='';
+  document.getElementById('forgotResult').innerHTML='Điền đúng họ tên, lớp, trường để tra cứu tài khoản đã được giáo viên cấp.';
+  document.getElementById('forgotPasswordModal').classList.add('show');
+}
+
+function closeForgotPasswordModal(){
+  document.getElementById('forgotPasswordModal').classList.remove('show');
+}
+
+function recoverStudentAccount(){
+  const name=document.getElementById('forgotName').value.trim();
+  const className=document.getElementById('forgotClass').value.trim();
+  const schoolName=document.getElementById('forgotSchool').value.trim();
+  const account=getStudentAccounts().find(item=>isSameStudentRecord(item,name,className,schoolName));
+  document.getElementById('forgotResult').innerHTML=account
+    ? `<b>Tài khoản:</b> ${escapeHtml(account.username||'')}<br><b>Mật khẩu hiện tại:</b> ${escapeHtml(account.password||'')}<br><b>Cập nhật gần nhất:</b> ${formatDateTime(account.updatedAt||account.createdAt)}`
+    : 'Không tìm thấy tài khoản phù hợp. Hãy liên hệ giáo viên để được cấp lại tài khoản hoặc mật khẩu.';
+}
+
+function openChangePasswordModal(){
+  if(!currentStudentAccount){
+    alert('Vui lòng đăng nhập học sinh trước.');
+    return;
+  }
+  document.getElementById('oldStudentPass').value='';
+  document.getElementById('newStudentPass').value='';
+  document.getElementById('confirmStudentPass').value='';
+  document.getElementById('changePassResult').innerHTML='';
+  document.getElementById('changePasswordModal').classList.add('show');
+}
+
+function closeChangePasswordModal(){
+  document.getElementById('changePasswordModal').classList.remove('show');
+}
+
+function changeStudentPassword(){
+  if(!currentStudentAccount) return;
+  const oldPass=document.getElementById('oldStudentPass').value.trim();
+  const newPass=document.getElementById('newStudentPass').value.trim();
+  const confirmPass=document.getElementById('confirmStudentPass').value.trim();
+  if(oldPass!==String(currentStudentAccount.password||'')){
+    document.getElementById('changePassResult').innerHTML='Mật khẩu hiện tại chưa đúng.';
+    return;
+  }
+  if(!newPass || newPass.length<4){
+    document.getElementById('changePassResult').innerHTML='Mật khẩu mới phải có ít nhất 4 ký tự.';
+    return;
+  }
+  if(newPass!==confirmPass){
+    document.getElementById('changePassResult').innerHTML='Hai lần nhập mật khẩu mới chưa khớp.';
+    return;
+  }
+  const accounts=getStudentAccounts();
+  const index=accounts.findIndex(item=>String(item.username||'').trim()===String(currentStudentAccount.username||'').trim());
+  if(index===-1) return;
+  accounts[index].password=newPass;
+  accounts[index].updatedAt=Date.now();
+  setStudentAccounts(accounts);
+  currentStudentAccount=accounts[index];
+  document.getElementById('changePassResult').innerHTML='Đổi mật khẩu thành công.';
+  renderTeacherPanel();
+  saveUiState();
+}
+
+function getAccountFormData(){
+  return {
+    name:document.getElementById('newAccountName') ? document.getElementById('newAccountName').value.trim() : '',
+    className:document.getElementById('newAccountClass') ? document.getElementById('newAccountClass').value.trim() : '',
+    schoolName:document.getElementById('newAccountSchool') ? document.getElementById('newAccountSchool').value.trim() : '',
+    username:document.getElementById('newAccountUser') ? document.getElementById('newAccountUser').value.trim() : '',
+    password:document.getElementById('newAccountPass') ? document.getElementById('newAccountPass').value.trim() : ''
+  };
+}
+
+function slugifyForAccount(value){
+  return normalizeLookupText(value).replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');
+}
+
+function generateUniqueStudentUsername(name,className){
+  const baseRaw=(slugifyForAccount(name).slice(0,10) || 'hs') + (slugifyForAccount(className).slice(0,4) || 'lop');
+  const accounts=getStudentAccounts();
+  let base=baseRaw || 'hocsinh';
+  let username=base;
+  let counter=1;
+  while(accounts.some(item=>String(item.username||'').trim()===username)){
+    username=`${base}${String(counter).padStart(2,'0')}`;
+    counter++;
+  }
+  return username;
+}
+
+function generateStudentPassword(name,className){
+  const raw=(slugifyForAccount(className).slice(0,3) || 'lop') + (slugifyForAccount(name).slice(0,3) || 'hs') + String(Math.floor(Math.random()*9000)+1000);
+  return raw.slice(0,16);
+}
+
+function buildStudentAccountPayload(form, existing){
+  const now=Date.now();
+  return Object.assign({}, existing||{}, {
+    name:form.name,
+    className:form.className,
+    schoolName:form.schoolName,
+    username:form.username || (existing && existing.username) || generateUniqueStudentUsername(form.name,form.className),
+    password:form.password || (existing && existing.password) || generateStudentPassword(form.name,form.className),
+    updatedAt:now,
+    createdAt:(existing && existing.createdAt) || now
+  });
+}
+
+function upsertStudentAccount(form){
+  const accounts=getStudentAccounts();
+  const existingIndex=accounts.findIndex(item=>String(item.username||'').trim()===String(form.username||'').trim() || isSameStudentRecord(item,form.name,form.className,form.schoolName));
+  const payload=buildStudentAccountPayload(form, existingIndex>=0 ? accounts[existingIndex] : null);
+  if(existingIndex>=0){
+    accounts[existingIndex]=payload;
+  }else{
+    accounts.push(payload);
+  }
+  setStudentAccounts(accounts);
+  return payload;
+}
+
+function openCreateStudentAccountModal(){
+  document.getElementById('createAccountName').value=document.getElementById('studentName').value.trim();
+  document.getElementById('createAccountClass').value=document.getElementById('className').value.trim();
+  document.getElementById('createAccountSchool').value=document.getElementById('schoolName').value.trim();
+  document.getElementById('createAccountResult').innerHTML='Điền đầy đủ Họ tên, Lớp, Trường để tạo tài khoản mới.';
+  document.getElementById('createStudentAccountModal').classList.add('show');
+}
+
+function closeCreateStudentAccountModal(){
+  document.getElementById('createStudentAccountModal').classList.remove('show');
+}
+
+function createOwnStudentAccount(){
+  const form={
+    name:document.getElementById('createAccountName').value.trim(),
+    className:document.getElementById('createAccountClass').value.trim(),
+    schoolName:document.getElementById('createAccountSchool').value.trim(),
+    username:'',
+    password:''
+  };
+  if(!form.name || !form.className || !form.schoolName){
+    document.getElementById('createAccountResult').innerHTML='Vui lòng nhập đầy đủ Họ tên, Lớp, Trường.';
+    return;
+  }
+  const existing=getStudentAccounts().find(item=>isSameStudentRecord(item,form.name,form.className,form.schoolName));
+  if(existing){
+    document.getElementById('createAccountResult').innerHTML=`Học sinh này đã có tài khoản.<br><b>Tài khoản:</b> ${escapeHtml(existing.username||'')}<br><b>Mật khẩu:</b> ${escapeHtml(existing.password||'')}`;
+    return;
+  }
+  const account=upsertStudentAccount(form);
+  document.getElementById('createAccountResult').innerHTML=`Tạo tài khoản thành công.<br><b>Tài khoản:</b> ${escapeHtml(account.username||'')}<br><b>Mật khẩu:</b> ${escapeHtml(account.password||'')}`;
+  renderTeacherPanel();
+}
+
+function parseAccountImportText(content){
+  const lines=String(content||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+  if(!lines.length) return [];
+  const splitLine=line=> line.includes('	') ? line.split('	') : (line.includes(';') ? line.split(';') : line.split(','));
+  let rows=lines.map(splitLine).map(cols=>cols.map(item=>String(item||'').trim()));
+  if(rows.length && rows[0].some(cell=>normalizeLookupText(cell).includes('ho ten') || normalizeLookupText(cell).includes('tai khoan'))){
+    rows=rows.slice(1);
+  }
+  return rows.map(cols=>({
+    name:cols[0]||'',
+    className:cols[1]||'',
+    schoolName:cols[2]||'',
+    username:cols[3]||'',
+    password:cols[4]||''
+  })).filter(item=>item.name && item.className && item.schoolName);
+}
+
+function importStudentAccountsFromFile(){
+  const fileInput=document.getElementById('accountImportFile');
+  const file=fileInput && fileInput.files && fileInput.files[0];
+  if(!file){
+    alert('Vui lòng chọn file danh sách trước khi nhập.');
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=function(){
+    const rows=parseAccountImportText(reader.result);
+    if(!rows.length){
+      alert('Không đọc được dữ liệu hợp lệ từ file.');
+      return;
+    }
+    let count=0;
+    rows.forEach(row=>{
+      upsertStudentAccount(row);
+      count++;
+    });
+    renderTeacherPanel();
+    alert(`Đã nhập ${count} tài khoản từ file.`);
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+function createStudentAccount(){
+  const form=getAccountFormData();
+  if(!form.name || !form.className || !form.schoolName || !form.username || !form.password){
+    alert('Vui lòng nhập đầy đủ thông tin để cấp tài khoản học sinh.');
+    return;
+  }
+  upsertStudentAccount(form);
+  renderTeacherPanel();
+  alert('Đã cấp / cập nhật tài khoản học sinh.');
+}
+
+function resetStudentAccountPassword(){
+  const form=getAccountFormData();
+  if(!form.username || !form.password){
+    alert('Nhập tài khoản và mật khẩu mới để cấp lại.');
+    return;
+  }
+  const accounts=getStudentAccounts();
+  const index=accounts.findIndex(item=>String(item.username||'').trim()===form.username || isSameStudentRecord(item,form.name,form.className,form.schoolName));
+  if(index===-1){
+    alert('Không tìm thấy tài khoản học sinh để cấp lại mật khẩu.');
+    return;
+  }
+  accounts[index].password=form.password;
+  accounts[index].updatedAt=Date.now();
+  if(form.name) accounts[index].name=form.name;
+  if(form.className) accounts[index].className=form.className;
+  if(form.schoolName) accounts[index].schoolName=form.schoolName;
+  setStudentAccounts(accounts);
+  renderTeacherPanel();
+  alert('Đã cấp lại mật khẩu học sinh.');
+}
+
+function deleteStudentAccount(){
+  const form=getAccountFormData();
+  const accounts=getStudentAccounts();
+  const index=accounts.findIndex(item=>String(item.username||'').trim()===form.username || isSameStudentRecord(item,form.name,form.className,form.schoolName));
+  if(index===-1){
+    alert('Không tìm thấy tài khoản học sinh để xóa.');
+    return;
+  }
+  if(confirm('Bạn có chắc muốn xóa tài khoản học sinh này không?')){
+    accounts.splice(index,1);
+    setStudentAccounts(accounts);
+    renderTeacherPanel();
+    alert('Đã xóa tài khoản học sinh.');
+  }
+}
+
+
+function resetStudentAccountUsername(){
+  const form=getAccountFormData();
+  if(!form.username){
+    alert('Nhập tài khoản mới để cấp lại tài khoản.');
+    return;
+  }
+  const accounts=getStudentAccounts();
+  const index=accounts.findIndex(item=>isSameStudentRecord(item,form.name,form.className,form.schoolName) || String(item.username||'').trim()===String(form.username||'').trim());
+  if(index===-1){
+    alert('Không tìm thấy học sinh để cấp lại tài khoản.');
+    return;
+  }
+  const duplicated=accounts.findIndex((item,i)=>i!==index && String(item.username||'').trim()===form.username);
+  if(duplicated!==-1){
+    alert('Tài khoản mới đã tồn tại. Vui lòng chọn tài khoản khác.');
+    return;
+  }
+  accounts[index].username=form.username;
+  if(form.name) accounts[index].name=form.name;
+  if(form.className) accounts[index].className=form.className;
+  if(form.schoolName) accounts[index].schoolName=form.schoolName;
+  accounts[index].updatedAt=Date.now();
+  setStudentAccounts(accounts);
+  renderTeacherPanel();
+  alert('Đã cấp lại tài khoản học sinh.');
+}
+
+function deleteStudentAccountByIndex(index){
+  const accounts=getStudentAccounts();
+  if(index<0 || index>=accounts.length) return;
+  if(confirm('Bạn có chắc muốn xóa tài khoản học sinh này không?')){
+    const accountKey=getStudentAccountIdentity(accounts[index]);
+    accounts.splice(index,1);
+    setStudentAccounts(accounts);
+    selectedStudentAccountKeys=(selectedStudentAccountKeys||[]).filter(key=>key!==accountKey);
+    renderTeacherPanel();
+    alert('Đã xóa tài khoản học sinh.');
+  }
+}
+
+function toggleStudentAccountSelection(index){
+  const accounts=getStudentAccounts().sort((a,b)=>String(a.className||'').localeCompare(String(b.className||''),'vi',{sensitivity:'base'}) || String(a.name||'').localeCompare(String(b.name||''),'vi',{sensitivity:'base'}));
+  if(index<0 || index>=accounts.length) return;
+  const key=getStudentAccountIdentity(accounts[index]);
+  const set=getSelectedStudentAccountSet();
+  if(set.has(key)){
+    set.delete(key);
+  }else{
+    set.add(key);
+  }
+  selectedStudentAccountKeys=Array.from(set);
+  renderAccountManager();
+}
+
+function toggleSelectAllStudentAccounts(){
+  const accounts=getStudentAccounts().sort((a,b)=>String(a.className||'').localeCompare(String(b.className||''),'vi',{sensitivity:'base'}) || String(a.name||'').localeCompare(String(b.name||''),'vi',{sensitivity:'base'}));
+  const allKeys=accounts.map(getStudentAccountIdentity);
+  const set=getSelectedStudentAccountSet();
+  const allSelected=allKeys.length>0 && allKeys.every(key=>set.has(key));
+  selectedStudentAccountKeys=allSelected ? [] : allKeys.slice();
+  renderAccountManager();
+}
+
+function deleteSelectedStudentAccounts(){
+  const selectedSet=getSelectedStudentAccountSet();
+  if(!selectedSet.size){
+    alert('Chưa có tài khoản nào được chọn.');
+    return;
+  }
+  if(!confirm('Bạn có chắc muốn xóa các tài khoản đã chọn không?')) return;
+  const accounts=getStudentAccounts();
+  const remain=accounts.filter(item=>!selectedSet.has(getStudentAccountIdentity(item)));
+  setStudentAccounts(remain);
+  selectedStudentAccountKeys=[];
+  renderTeacherPanel();
+  alert('Đã xóa các tài khoản đã chọn.');
+}
+
+
+function parseDelimitedAccountText(textContent){
+  const rows=String(textContent||'').replace(/^\uFEFF/,'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+  if(!rows.length) return [];
+  const delimiter=rows[0].includes('\t') ? '\t' : ',';
+  const parseLine=(line)=>{
+    if(delimiter==='\t') return line.split('\t').map(v=>v.trim());
+    const result=[];
+    let current='';
+    let inQuotes=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){
+        if(inQuotes && line[i+1]==='"'){
+          current+='"';
+          i++;
+        }else{
+          inQuotes=!inQuotes;
+        }
+      }else if(ch===delimiter && !inQuotes){
+        result.push(current.trim());
+        current='';
+      }else{
+        current+=ch;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+  const header=parseLine(rows[0]).map(v=>normalizeLookupText(v));
+  const getIndex=(names)=>header.findIndex(h=>names.includes(h));
+  const nameIndex=getIndex(['ho ten','hoten','ten']);
+  const classIndex=getIndex(['lop']);
+  const schoolIndex=getIndex(['truong']);
+  const userIndex=getIndex(['tai khoan','taikhoan','username','user']);
+  const passIndex=getIndex(['mat khau','matkhau','password','pass']);
+  return rows.slice(1).map(parseLine).map(cols=>({
+    name:nameIndex>=0 ? String(cols[nameIndex]||'').trim() : '',
+    className:classIndex>=0 ? String(cols[classIndex]||'').trim() : '',
+    schoolName:schoolIndex>=0 ? String(cols[schoolIndex]||'').trim() : '',
+    username:userIndex>=0 ? String(cols[userIndex]||'').trim() : '',
+    password:passIndex>=0 ? String(cols[passIndex]||'').trim() : ''
+  })).filter(item=>item.name || item.className || item.schoolName || item.username || item.password);
+}
+
+function updateStudentAccountFileLabel(){
+  const label=document.getElementById('studentAccountFileName');
+  if(label){
+    label.textContent=latestImportedStudentSourceFileName || 'Chưa chọn tệp nào';
+  }
+}
+
+function downloadStudentAccountTemplate(){
+  const base64Data="0M8R4KGxGuEAAAAAAAAAAAAAAAAAAAAAPgADAP7/CQAGAAAAAAAAAAAAAAABAAAAOQAAAAAAAAAAEAAA/v///wAAAAD+////AAAAADgAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8JCBAAAAYFAFpPzQfBAAIABggAAOEAAgCwBMEAAgAAAOIAAABcAHAACgAAUEhVT05HIERVWSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIEIAAgCwBGEBAgAAAMABAAA9AQIAAQCcAAIAEQAZAAIAAAASAAIAAAATAAIAAACvAQIAAAC8AQIAAAA9ABIA/3//fwBLaBo4AAAAAAABAFgCQAACAAAAjQACAAAAIgACAAAADgACAAEAtwECAAAA2gACAAAAMQAeANwAAAAIAJABAAAAAgAABwFDAGEAbABpAGIAcgBpADEAHgDcAAAACACQAQAAAAIAAAcBQwBhAGwAaQBiAHIAaQAxAB4A3AAAAAgAkAEAAAACAAAHAUMAYQBsAGkAYgByAGkAMQAeANwAAAAIAJABAAAAAgAABwFDAGEAbABpAGIAcgBpADEAHgDcAAAACACQAQAAAAIAAAcBQwBhAGwAaQBiAHIAaQAxACoAaAEAADYAkAEAAAACAAANAUMAYQBsAGkAYgByAGkAIABMAGkAZwBoAHQAMQAeACwBAQA2ALwCAAAAAgAABwFDAGEAbABpAGIAcgBpADEAHgAEAQEANgC8AgAAAAIAAAcBQwBhAGwAaQBiAHIAaQAxAB4A3AABADYAvAIAAAACAAAHAUMAYQBsAGkAYgByAGkAMQAeANwAAAARAJABAAAAAgAABwFDAGEAbABpAGIAcgBpADEAHgDcAAAAFACQAQAAAAIAAAcBQwBhAGwAaQBiAHIAaQAxAB4A3AAAADwAkAEAAAACAAAHAUMAYQBsAGkAYgByAGkAMQAeANwAAAA+AJABAAAAAgAABwFDAGEAbABpAGIAcgBpADEAHgDcAAEAPwC8AgAAAAIAAAcBQwBhAGwAaQBiAHIAaQAxAB4A3AABADQAvAIAAAACAAAHAUMAYQBsAGkAYgByAGkAMQAeANwAAAA0AJABAAAAAgAABwFDAGEAbABpAGIAcgBpADEAHgDcAAEACQC8AgAAAAIAAAcBQwBhAGwAaQBiAHIAaQAxAB4A3AAAAAoAkAEAAAACAAAHAUMAYQBsAGkAYgByAGkAMQAeANwAAgAXAJABAAAAAgAABwFDAGEAbABpAGIAcgBpADEAHgDcAAEACAC8AgAAAAIAAAcBQwBhAGwAaQBiAHIAaQAxAB4A3AAAAAkAkAEAAAACAAAHAUMAYQBsAGkAYgByAGkAMQAuAPAAAAAIAJABAAAAAQAADwFUAGkAbQBlAHMAIABOAGUAdwAgAFIAbwBtAGEAbgAxAC4A8AABAAgAvAIAAAABAAAPAVQAaQBtAGUAcwAgAE4AZQB3ACAAUgBvAG0AYQBuADEALgDwAAIACACQAQAAAAEAAA8BVABpAG0AZQBzACAATgBlAHcAIABSAG8AbQBhAG4AMQAuAPAAAgAKAJABAAAAAQAADwFUAGkAbQBlAHMAIABOAGUAdwAgAFIAbwBtAGEAbgAeBBwABQAXAAAiJCIjLCMjMF8pO1woIiQiIywjIzBcKR4EIQAGABwAACIkIiMsIyMwXyk7W1JlZF1cKCIkIiMsIyMwXCkeBCIABwAdAAAiJCIjLCMjMC4wMF8pO1woIiQiIywjIzAuMDBcKR4EJwAIACIAACIkIiMsIyMwLjAwXyk7W1JlZF1cKCIkIiMsIyMwLjAwXCkeBDcAKgAyAABfKCIkIiogIywjIzBfKTtfKCIkIiogXCgjLCMjMFwpO18oIiQiKiAiLSJfKTtfKEBfKR4ELgApACkAAF8oKiAjLCMjMF8pO18oKiBcKCMsIyMwXCk7XygqICItIl8pO18oQF8pHgQ/ACwAOgAAXygiJCIqICMsIyMwLjAwXyk7XygiJCIqIFwoIywjIzAuMDBcKTtfKCIkIiogIi0iPz9fKTtfKEBfKR4ENgArADEAAF8oKiAjLCMjMC4wMF8pO18oKiBcKCMsIyMwLjAwXCk7XygqICItIj8/Xyk7XyhAXykeBBUApAAQAAAiWWVzIjsiWWVzIjsiTm8iHgQaAKUAFQAAIlRydWUiOyJUcnVlIjsiRmFsc2UiHgQUAKYADwAAIk9uIjsiT24iOyJPZmYiHgRdAKcALAABWwAkAKwgLQAyAF0AXAAgACMALAAjACMAMAAuADAAMABfACkAOwBbAFIAZQBkAF0AXAAoAFsAJACsIC0AMgBdAFwAIAAjACwAIwAjADAALgAwADAAXAApAOAAFAAAAAAA9f8gAAAAAAAAAAAAAADAIOAAFAABAAAA9f8gAAD0AAAAAAAAAADAIOAAFAABAAAA9f8gAAD0AAAAAAAAAADAIOAAFAACAAAA9f8gAAD0AAAAAAAAAADAIOAAFAACAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAAAAAAAQAgAAAAAAAAAAAAAALAIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASfIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASvIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASJIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASaIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASbIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASqIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASsIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASvIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASWIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASrIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASsIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASrIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASxIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASvIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASWIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASrIOAAFAAFAAAA9f8gAAC0AAAAAAAAAASsIOAAFAAFAAAA9f8gAAC0AAAAAAAAAAS5IOAAFAAVAAAA9f8gAAC0AAAAAAAAAAS+IOAAFAAVAAAA9f8gAAC0AAAAAAAAAAS1IOAAFAAVAAAA9f8gAAC0AAAAAAAAAAS3IOAAFAAVAAAA9f8gAAC0AAAAAAAAAASzIOAAFAAVAAAA9f8gAAC0AAAAAAAAAASxIOAAFAAVAAAA9f8gAAC0AAAAAAAAAAS5IOAAFAALAAAA9f8gAAC0AAAAAAAAAAStIOAAFAAPAAAA9f8gAACUERGXC5cLAASWIOAAFAARAAAA9f8gAACUZma/H78fAAS3IOAAFAAFACsA9f8gAAD4AAAAAAAAAADAIOAAFAAFACkA9f8gAAD4AAAAAAAAAADAIOAAFAAFACwA9f8gAAD4AAAAAAAAAADAIOAAFAAFACoA9f8gAAD4AAAAAAAAAADAIOAAFAATAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAKAAAA9f8gAAC0AAAAAAAAAASqIOAAFAAHAAAA9f8gAADUAFAAAAAfAADAIOAAFAAIAAAA9f8gAADUAFAAAAAWAADAIOAAFAAJAAAA9f8gAADUACAAAIAYAADAIOAAFAAJAAAA9f8gAAD0AAAAAAAAAADAIOAAFAANAAAA9f8gAACUERGXC5cLAASvIOAAFAAQAAAA9f8gAADUAGAAAAAaAADAIOAAFAAMAAAA9f8gAAC0AAAAAAAAAASrIOAAFAAFAAAA9f8gAACcEREWCxYLAASaIOAAFAAOAAAA9f8gAACUERG/H78fAASWIOAAFAAFAAkA9f8gAAD4AAAAAAAAAADAIOAAFAAGAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAUAAAA9f8gAADUAGEAAD4fAADAIOAAFAASAAAA9f8gAAD0AAAAAAAAAADAIOAAFAAWADEAAQAgAAAMAAAAAAAAAALAIOAAFAAXADEAAQAaAAA8IiJAIEAgAALAIOAAFAAXADEAAQAaAAA8ICIAIEAgAALAIOAAFAAWADEAAQAYAAA8IiBAIAAgAALAIOAAFAAWADEAAQAYAAA8ICAAIAAgAALAIOAAFAAXADEAAQAiAAAcAAAAAAAAAALAIOAAFAAYADEAAQAiAAAcAAAAAAAAAALAIOAAFAAXADEAAQAiAAAcAAAAAAAAAALAIOAAFAAZADEAAQAhAAAcAAAAAAAAAALAIHwIFAB8CAAAAAAAAAAAAAAAAEcAahDSSH0ILQB9CAAAAAAAAAAAAAAAAAAAAAACAA0AFAADAAAAAQAAAAAwADAAXwApDgAFAAJ9CC0AfQgAAAAAAAAAAAAAAAABAAAAAgANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACfQgtAH0IAAAAAAAAAAAAAAAAAgAAAAIADQAUAAMAAAABAAAAADAAMABfACkOAAUAAn0ILQB9CAAAAAAAAAAAAAAAAAMAAAACAA0AFAADAAAAAQAAAAAwADAAXwApDgAFAAJ9CC0AfQgAAAAAAAAAAAAAAAAEAAAAAgANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACfQgtAH0IAAAAAAAAAAAAAAAABQAAAAIADQAUAAMAAAABAAAAADAAMABfACkOAAUAAn0ILQB9CAAAAAAAAAAAAAAAAAYAAAACAA0AFAADAAAAAQAAAAAwADAAXwApDgAFAAJ9CC0AfQgAAAAAAAAAAAAAAAAHAAAAAgANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACfQgtAH0IAAAAAAAAAAAAAAAACAAAAAIADQAUAAMAAAABAAAAADAAMABfACkOAAUAAn0ILQB9CAAAAAAAAAAAAAAAAAkAAAACAA0AFAADAAAAAQAAAAAwADAAXwApDgAFAAJ9CC0AfQgAAAAAAAAAAAAAAAAKAAAAAgANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACfQgtAH0IAAAAAAAAAAAAAAAACwAAAAIADQAUAAMAAAABAAAAADAAMABfACkOAAUAAn0ILQB9CAAAAAAAAAAAAAAAAAwAAAACAA0AFAADAAAAAQAAAAAwADAAXwApDgAFAAJ9CC0AfQgAAAAAAAAAAAAAAAANAAAAAgANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACfQgtAH0IAAAAAAAAAAAAAAAADgAAAAIADQAUAAMAAAABAAAAADAAMABfACkOAAUAAn0ILQB9CAAAAAAAAAAAAAAAAA8AAAACAA0AFAADAAAAAQAAAAAwADAAXwApDgAFAAJ9CC0AfQgAAAAAAAAAAAAAAAArAAAAAgANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACfQgtAH0IAAAAAAAAAAAAAAAALAAAAAIADQAUAAMAAAABAAAAADAAMABfACkOAAUAAn0ILQB9CAAAAAAAAAAAAAAAAC0AAAACAA0AFAADAAAAAQAAAAAwADAAXwApDgAFAAJ9CC0AfQgAAAAAAAAAAAAAAAAuAAAAAgANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACfQgtAH0IAAAAAAAAAAAAAAAAOgAAAAIADQAUAAMAAAABAAAAADAAMABfACkOAAUAAn0ILQB9CAAAAAAAAAAAAAAAADsAAAACAA0AFAADAAAAAwAAAAAwADAAXwApDgAFAAF9CEEAfQgAAAAAAAAAAAAAAAAxAAAAAwANABQAAwAAAAMAAAAAMAAwAF8AKQ4ABQACCAAUAAMAAAAEAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAyAAAAAwANABQAAwAAAAMAAAAAMAAwAF8AKQ4ABQACCAAUAAMA/z8EAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAzAAAAAwANABQAAwAAAAMAAAAAMAAwAF8AKQ4ABQACCAAUAAMAMjMEAAAAWwAkAKwgLQB9CC0AfQgAAAAAAAAAAAAAAAA0AAAAAgANABQAAwAAAAMAAAAAMAAwAF8AKQ4ABQACfQhBAH0IAAAAAAAAAAAAAAAAMAAAAAMADQAUAAIAAAAAYQD/ADAAMABfACkOAAUAAgQAFAACAAAAxu/O/1sAJACsIC0AfQhBAH0IAAAAAAAAAAAAAAAAKAAAAAMADQAUAAIAAACcAAb/ADAAMABfACkOAAUAAgQAFAACAAAA/8fO/1sAJACsIC0AfQhBAH0IAAAAAAAAAAAAAAAANwAAAAMADQAUAAIAAACcVwD/ADAAMABfACkOAAUAAgQAFAACAAAA/+uc/1sAJACsIC0AfQiRAH0IAAAAAAAAAAAAAAAANQAAAAcADQAUAAIAAAA/P3b/ADAAMABfACkOAAUAAgQAFAACAAAA/8yZ/1sAJACsIC0ABwAUAAIAAAB/f3//IwAjADAALgAIABQAAgAAAH9/f/8gICAgICAgIAkAFAACAAAAf39//wAAAAAAAAAACgAUAAIAAAB/f3//AAAAAAAAAAB9CJEAfQgAAAAAAAAAAAAAAAA5AAAABwANABQAAgAAAD8/P/8AMAAwAF8AKQ4ABQACBAAUAAIAAADy8vL/WwAkAKwgLQAHABQAAgAAAD8/P/8jACMAMAAuAAgAFAACAAAAPz8//yAgICAgICAgCQAUAAIAAAA/Pz//AAAAAAAAAAAKABQAAgAAAD8/P/8AAAAAAAAAAH0IkQB9CAAAAAAAAAAAAAAAACkAAAAHAA0AFAACAAAA+n0A/wAwADAAXwApDgAFAAIEABQAAgAAAPLy8v9bACQArCAtAAcAFAACAAAAf39//yMAIwAwAC4ACAAUAAIAAAB/f3//ICAgICAgICAJABQAAgAAAH9/f/8AAAAAAAAAAAoAFAACAAAAf39//wAAAAAAAAAAfQhBAH0IAAAAAAAAAAAAAAAANgAAAAMADQAUAAIAAAD6fQD/ADAAMABfACkOAAUAAggAFAACAAAA/4AB/1sAJACsIC0AfQiRAH0IAAAAAAAAAAAAAAAAKgAAAAcADQAUAAMAAAAAAAAAADAAMABfACkOAAUAAgQAFAACAAAApaWl/1sAJACsIC0ABwAUAAIAAAA/Pz//IwAjADAALgAIABQAAgAAAD8/P/8gICAgICAgIAkAFAACAAAAPz8//wAAAAAAAAAACgAUAAIAAAA/Pz//AAAAAAAAAAB9CC0AfQgAAAAAAAAAAAAAAAA9AAAAAgANABQAAgAAAP8AAP8AMAAwAF8AKQ4ABQACfQiRAH0IAAAAAAAAAAAAAAAAOAAAAAcADQAUAAMAAAABAAAAADAAMABfACkOAAUAAgQAFAACAAAA///M/1sAJACsIC0ABwAUAAIAAACysrL/IwAjADAALgAIABQAAgAAALKysv8gICAgICAgIAkAFAACAAAAsrKy/wAAAAAAAAAACgAUAAIAAACysrL/AAAAAAAAAAB9CC0AfQgAAAAAAAAAAAAAAAAvAAAAAgANABQAAgAAAH9/f/8AMAAwAF8AKQ4ABQACfQhVAH0IAAAAAAAAAAAAAAAAPAAAAAQADQAUAAMAAAABAAAAADAAMABfACkOAAUAAgcAFAADAAAABAAAAFsAJACsIC0ACAAUAAMAAAAEAAAAIwAjADAALgB9CEEAfQgAAAAAAAAAAAAAAAAiAAAAAwANABQAAwAAAAAAAAAAMAAwAF8AKQ4ABQACBAAUAAMAAAAEAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAQAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAZWYEAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAWAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAzEwEAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAcAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAMjMEAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAjAAAAAwANABQAAwAAAAAAAAAAMAAwAF8AKQ4ABQACBAAUAAMAAAAFAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAARAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAZWYFAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAXAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAzEwFAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAdAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAMjMFAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAkAAAAAwANABQAAwAAAAAAAAAAMAAwAF8AKQ4ABQACBAAUAAMAAAAGAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAASAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAZWYGAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAYAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAzEwGAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAeAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAMjMGAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAlAAAAAwANABQAAwAAAAAAAAAAMAAwAF8AKQ4ABQACBAAUAAMAAAAHAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAATAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAZWYHAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAZAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAzEwHAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAfAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAMjMHAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAmAAAAAwANABQAAwAAAAAAAAAAMAAwAF8AKQ4ABQACBAAUAAMAAAAIAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAUAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAZWYIAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAaAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAzEwIAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAgAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAMjMIAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAnAAAAAwANABQAAwAAAAAAAAAAMAAwAF8AKQ4ABQACBAAUAAMAAAAJAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAVAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4ABQACBAAUAAMAZWYJAAAAWwAkAKwgLQB9CEEAfQgAAAAAAAAAAAAAAAAbAAAAAwANABQAAwAAAAEAAAAAMAAwAF8AKQ4A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AAAAAAAAAAAAAAAAAAAAAAAAAgAARABlAGYAYQB1AGwAdAAgAFMAZQB0AHQAaQBuAGcAcwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAMAAgYAAQICAQKAAAAAAAABCwMAAQECAgEHAAcABwAHAAMDAwMDAwMDWAIAAAMDAAAAAAEAAAACAQAAAAAAAAAA//8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAgICBAICAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAggcAAhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD+/wAACgACAAAAAAAAAAAAAAAAAAAAAAABAAAAAtXN1ZwuGxCTlwgAKyz5rjAAAADEAAAACQAAAAEAAABQAAAADwAAAFgAAAAXAAAAZAAAAAsAAABsAAAAEAAAAHQAAAATAAAAfAAAABYAAACEAAAADQAAAIwAAAAMAAAAnwAAAAIAAADkBAAAHgAAAAQAAAAAAAAAAwAAAAAAEAALAAAAAAAAAAsAAAAAAAAACwAAAAAAAAALAAAAAAAAAB4QAAABAAAABwAAAFNoZWV0MQAMEAAAAgAAAB4AAAALAAAAV29ya3NoZWV0cwADAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAIAAAADAAAABAAAAAUAAAAGAAAABwAAAAgAAAAJAAAACgAAAAsAAAAMAAAADQAAAA4AAAAPAAAAEAAAABEAAAASAAAAEwAAABQAAAAVAAAAFgAAABcAAAAYAAAAGQAAABoAAAAbAAAAHAAAAB0AAAAeAAAAHwAAACAAAAAhAAAAIgAAACMAAAAkAAAAJQAAACYAAAAnAAAA/v///ykAAAAqAAAAKwAAACwAAAAtAAAALgAAAC8AAAD+////MQAAADIAAAAzAAAANAAAADUAAAA2AAAANwAAAP7////9/////v////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9SAG8AbwB0ACAARQBuAHQAcgB5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFgAFAf//////////AgAAACAIAgAAAAAAwAAAAAAAAEYAAAAAAAAAAAAAAAAAAAAAAAAAAP7///8AAAAAAAAAAFcAbwByAGsAYgBvAG8AawAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASAAIB////////////////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL9PAAAAAAAABQBTAHUAbQBtAGEAcgB5AEkAbgBmAG8AcgBtAGEAdABpAG8AbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAgEBAAAAAwAAAP////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoAAAAABAAAAAAAAAFAEQAbwBjAHUAbQBlAG4AdABTAHUAbQBtAGEAcgB5AEkAbgBmAG8AcgBtAGEAdABpAG8AbgAAAAAAAAAAAAAAOAACAf///////////////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAEAAAAAAAAA==";
+  const binary=atob(base64Data);
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++){
+    bytes[i]=binary.charCodeAt(i);
+  }
+  const blob=new Blob([bytes],{type:'application/vnd.ms-excel'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='MẪU DANH SÁCH.xls';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function openStudentAccountUploadModal(){
+  const modal=document.getElementById('studentAccountUploadModal');
+  const label=document.getElementById('studentAccountUploadFileLabel');
+  if(label){
+    const input=document.getElementById('studentAccountUploadFile');
+    const file=input && input.files && input.files[0] ? input.files[0] : null;
+    label.textContent=file ? file.name : 'Chưa chọn tệp nào';
+  }
+  if(modal) modal.classList.add('show');
+}
+
+function closeStudentAccountUploadModal(){
+  const modal=document.getElementById('studentAccountUploadModal');
+  if(modal) modal.classList.remove('show');
+}
+
+function triggerStudentAccountUploadFile(){
+  const input=document.getElementById('studentAccountUploadFile');
+  if(input) input.click();
+}
+
+function handleStudentAccountUploadFileChange(){
+  const input=document.getElementById('studentAccountUploadFile');
+  const label=document.getElementById('studentAccountUploadFileLabel');
+  const file=input && input.files && input.files[0] ? input.files[0] : null;
+  if(label) label.textContent=file ? file.name : 'Chưa chọn tệp nào';
+}
+
+function splitAccountColumns(line){
+  return String(line||'').split(/\t|\s{2,}|\|/).map(v=>String(v||'').trim()).filter(Boolean);
+}
+
+function mapAccountRowsByHeader(headerCols,dataRows){
+  const header=headerCols.map(v=>normalizeLookupText(v));
+  const getIndex=(names)=>header.findIndex(h=>names.includes(h));
+  const nameIndex=getIndex(['ho ten','hoten','ten']);
+  const classIndex=getIndex(['lop']);
+  const schoolIndex=getIndex(['truong']);
+  const userIndex=getIndex(['tai khoan','taikhoan','username','user']);
+  const passIndex=getIndex(['mat khau','matkhau','password','pass']);
+  return dataRows.map(cols=>({
+    name:nameIndex>=0 ? String(cols[nameIndex]||'').trim() : '',
+    className:classIndex>=0 ? String(cols[classIndex]||'').trim() : '',
+    schoolName:schoolIndex>=0 ? String(cols[schoolIndex]||'').trim() : '',
+    username:userIndex>=0 ? String(cols[userIndex]||'').trim() : '',
+    password:passIndex>=0 ? String(cols[passIndex]||'').trim() : ''
+  })).filter(item=>item.name || item.className || item.schoolName || item.username || item.password);
+}
+
+function parseStructuredAccountText(textContent){
+  const lines=String(textContent||'').replace(/^\uFEFF/,'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+  if(lines.length<2) return [];
+  const headerCols=splitAccountColumns(lines[0]);
+  if(!headerCols.length) return [];
+  const dataRows=lines.slice(1).map(splitAccountColumns).filter(cols=>cols.length);
+  return mapAccountRowsByHeader(headerCols,dataRows);
+}
+
+function parseLabelBasedAccountText(textContent){
+  const text=String(textContent||'').replace(/\r/g,'');
+  if(!text.trim()) return [];
+  const lines=text.split('\n').map(line=>String(line||'').trim()).filter(Boolean);
+  const rows=[];
+  let current={name:'',className:'',schoolName:'',username:'',password:''};
+
+  function pushCurrent(){
+    if(current.name && current.className && current.schoolName){
+      rows.push({
+        name:current.name,
+        className:current.className,
+        schoolName:current.schoolName,
+        username:current.username,
+        password:current.password
+      });
+    }
+    current={name:'',className:'',schoolName:'',username:'',password:''};
+  }
+
+  lines.forEach(line=>{
+    const normalized=normalizeLookupText(line);
+
+    const nameMatch=line.match(/^(?:họ\s*tên|ho\s*ten|tên)\s*[:\-]\s*(.+)$/i);
+    if(nameMatch){
+      if(current.name && current.className && current.schoolName){
+        pushCurrent();
+      }
+      current.name=String(nameMatch[1]||'').trim();
+      return;
+    }
+
+    const classMatch=line.match(/^lớp\s*[:\-]\s*(.+)$/i) || line.match(/^lop\s*[:\-]\s*(.+)$/i);
+    if(classMatch){
+      current.className=String(classMatch[1]||'').trim();
+      return;
+    }
+
+    const schoolMatch=line.match(/^trường\s*[:\-]\s*(.+)$/i) || line.match(/^truong\s*[:\-]\s*(.+)$/i);
+    if(schoolMatch){
+      current.schoolName=String(schoolMatch[1]||'').trim();
+      return;
+    }
+
+    const userMatch=line.match(/^(?:tài\s*khoản|tai\s*khoan|username|user)\s*[:\-]\s*(.+)$/i);
+    if(userMatch){
+      current.username=String(userMatch[1]||'').trim();
+      return;
+    }
+
+    const passMatch=line.match(/^(?:mật\s*khẩu|mat\s*khau|password|pass)\s*[:\-]\s*(.+)$/i);
+    if(passMatch){
+      current.password=String(passMatch[1]||'').trim();
+      return;
+    }
+
+    const compactCols=splitAccountColumns(line);
+    if(compactCols.length>=3){
+      const headerLike=compactCols.map(v=>normalizeLookupText(v)).join(' ');
+      if(headerLike.includes('ho ten') || headerLike.includes('lop') || headerLike.includes('truong')){
+        return;
+      }
+      rows.push({
+        name:String(compactCols[0]||'').trim(),
+        className:String(compactCols[1]||'').trim(),
+        schoolName:String(compactCols[2]||'').trim(),
+        username:String(compactCols[3]||'').trim(),
+        password:String(compactCols[4]||'').trim()
+      });
+      current={name:'',className:'',schoolName:'',username:'',password:''};
+      return;
+    }
+
+    if(normalized in {'danh sach tao tai khoan':1,'danh sach hoc sinh':1}){
+      return;
+    }
+  });
+
+  if(current.name && current.className && current.schoolName){
+    pushCurrent();
+  }
+
+  return rows;
+}
+
+function parseAnyAccountText(textContent){
+  const first=parseDelimitedAccountText(textContent);
+  if(first.length) return first;
+
+  const second=parseStructuredAccountText(textContent);
+  if(second.length) return second;
+
+  return parseLabelBasedAccountText(textContent);
+}
+
+function parseHtmlTableAccountRows(htmlContent){
+  const html=String(htmlContent||'').trim();
+  if(!html) return [];
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(html,'text/html');
+  const tableRows=[...doc.querySelectorAll('table tr')];
+  if(tableRows.length){
+    const matrix=tableRows.map(tr=>[...tr.querySelectorAll('th,td')].map(cell=>String(cell.textContent||'').replace(/\s+/g,' ').trim()).filter(Boolean)).filter(row=>row.length);
+    if(matrix.length>=2){
+      const headerCols=matrix[0];
+      const dataRows=matrix.slice(1);
+      const mapped=mapAccountRowsByHeader(headerCols,dataRows);
+      if(mapped.length) return mapped;
+    }
+  }
+
+  const paragraphs=[...doc.querySelectorAll('p,li')].map(node=>String(node.textContent||'').replace(/\s+/g,' ').trim()).filter(Boolean);
+  if(paragraphs.length){
+    return parseAnyAccountText(paragraphs.join('\n'));
+  }
+  return [];
+}
+
+function parseExcelAccountRows(arrayBuffer){
+  if(typeof XLSX==='undefined') throw new Error('Thiếu thư viện XLSX');
+  const workbook=XLSX.read(arrayBuffer,{type:'array',cellText:true,cellDates:false});
+  const firstSheetName=workbook.SheetNames && workbook.SheetNames[0];
+  if(!firstSheetName) return [];
+  const sheet=workbook.Sheets[firstSheetName];
+  const matrix=XLSX.utils.sheet_to_json(sheet,{header:1,raw:false,defval:''});
+  if(!matrix.length) return [];
+  const headerCols=matrix[0].map(v=>String(v||'').trim());
+  const dataRows=matrix.slice(1).map(row=>row.map(v=>String(v||'').trim()));
+  return mapAccountRowsByHeader(headerCols,dataRows);
+}
+
+async function parseDocxAccountRows(arrayBuffer){
+  if(typeof mammoth==='undefined') throw new Error('Thiếu thư viện Mammoth');
+
+  const rawResult=await mammoth.extractRawText({arrayBuffer});
+  const rawRows=parseAnyAccountText(rawResult.value||'');
+  if(rawRows.length) return rawRows;
+
+  const htmlResult=await mammoth.convertToHtml({arrayBuffer});
+  const htmlRows=parseHtmlTableAccountRows(htmlResult.value||'');
+  if(htmlRows.length) return htmlRows;
+
+  return [];
+}
+
+async function parsePdfAccountRows(arrayBuffer){
+  if(typeof pdfjsLib==='undefined') throw new Error('Thiếu thư viện PDF');
+  const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+  const lines=[];
+  for(let pageNum=1;pageNum<=pdf.numPages;pageNum++){
+    const page=await pdf.getPage(pageNum);
+    const content=await page.getTextContent();
+    const grouped={};
+    (content.items||[]).forEach(item=>{
+      const y=Math.round((item.transform && item.transform[5]) || 0);
+      grouped[y]=grouped[y] || [];
+      grouped[y].push(item);
+    });
+    Object.keys(grouped).sort((a,b)=>Number(b)-Number(a)).forEach(key=>{
+      const row=grouped[key].sort((a,b)=>((a.transform && a.transform[4])||0)-((b.transform && b.transform[4])||0)).map(item=>String(item.str||'').trim()).filter(Boolean);
+      if(row.length) lines.push(row.join('\t'));
+    });
+  }
+  return parseAnyAccountText(lines.join('\n'));
+}
+
+async function parseDocAccountRows(file){
+  const textContent=await file.text();
+  return parseAnyAccountText(textContent);
+}
+
+function normalizeImportedStudentAccountRows(rows){
+  return (rows||[]).map(row=>({
+    name:String(row.name||'').trim(),
+    className:String(row.className||'').trim(),
+    schoolName:String(row.schoolName||'').trim(),
+    username:String(row.username||'').trim(),
+    password:String(row.password||'').trim()
+  })).filter(row=>row.name && row.className && row.schoolName);
+}
+
+async function readStudentAccountRowsFromFile(file){
+  const lowerName=String(file && file.name || '').toLowerCase();
+  if(lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')){
+    return parseExcelAccountRows(await file.arrayBuffer());
+  }
+  if(lowerName.endsWith('.docx')){
+    return parseDocxAccountRows(await file.arrayBuffer());
+  }
+  if(lowerName.endsWith('.doc')){
+    return parseDocAccountRows(file);
+  }
+  if(lowerName.endsWith('.pdf')){
+    return parsePdfAccountRows(await file.arrayBuffer());
+  }
+  throw new Error('Định dạng tệp không được hỗ trợ.');
+}
+
+async function confirmStudentAccountUpload(){
+  const input=document.getElementById('studentAccountUploadFile');
+  const file=input && input.files && input.files[0] ? input.files[0] : null;
+  if(!file){
+    alert('Vui lòng chọn tệp trước khi tải lên.');
+    return;
+  }
+  try{
+    const rows=normalizeImportedStudentAccountRows(await readStudentAccountRowsFromFile(file));
+    if(!rows.length){
+      alert('Không đọc được dữ liệu hợp lệ từ tệp đã chọn.');
+      return;
+    }
+    const accounts=getStudentAccounts();
+    latestImportedStudentAccountKeys=[];
+    let importedCount=0;
+    rows.forEach(row=>{
+      if(!row.username) row.username=generateStudentUsername(row.name,row.className,accounts);
+      if(!row.password) row.password=generateStudentPassword();
+      const existingIndex=accounts.findIndex(item=>String(item.username||'').trim()===row.username || isSameStudentRecord(item,row.name,row.className,row.schoolName));
+      const now=Date.now();
+      const payload=Object.assign({}, row, {updatedAt:now});
+      if(existingIndex>=0){
+        accounts[existingIndex]=Object.assign({}, accounts[existingIndex], payload);
+      }else{
+        payload.createdAt=now;
+        accounts.push(payload);
+      }
+      latestImportedStudentAccountKeys.push(makeStudentKey(row.name,row.className,row.schoolName));
+      importedCount++;
+    });
+    latestImportedStudentSourceFileName=file.name;
+    setStudentAccounts(accounts);
+    if(input) input.value='';
+    closeStudentAccountUploadModal();
+    handleStudentAccountUploadFileChange();
+    renderTeacherPanel();
+    alert('Đã tải lên danh sách thành công: ' + importedCount + ' tài khoản.');
+  }catch(err){
+    console.error(err);
+    alert('Không đọc được dữ liệu hợp lệ từ tệp đã chọn. Vui lòng kiểm tra lại nội dung danh sách trong file PDF, Word (.doc/.docx), Excel (.xls/.xlsx).');
+  }
+}
+
+function downloadLatestImportedStudentAccounts(){
+  if(typeof XLSX==='undefined'){
+    alert('Thiếu thư viện XLSX để tải danh sách.');
+    return;
+  }
+  const keySet=new Set(latestImportedStudentAccountKeys||[]);
+  if(!keySet.size){
+    alert('Chưa có danh sách nào vừa được tải lên để tải xuống.');
+    return;
+  }
+  const accounts=getStudentAccounts().filter(item=>keySet.has(makeStudentKey(item.name,item.className,item.schoolName)));
+  if(!accounts.length){
+    alert('Không tìm thấy dữ liệu danh sách vừa tải lên.');
+    return;
+  }
+  const rows=[
+    ['Họ tên','Lớp','Trường','Tài khoản','Mật khẩu'],
+    ...accounts.map(item=>[
+      String(item.name||''),
+      String(item.className||''),
+      String(item.schoolName||''),
+      String(item.username||''),
+      String(item.password||'')
+    ])
+  ];
+  const sheet=XLSX.utils.aoa_to_sheet(rows);
+  Object.keys(sheet).forEach(key=>{
+    if(key[0]==='!') return;
+    sheet[key].t='s';
+    sheet[key].z='@';
+  });
+  sheet['!cols']=[{wch:28},{wch:12},{wch:28},{wch:20},{wch:16}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,sheet,'Danh sach hoc sinh');
+  XLSX.writeFile(wb,'danh_sach_hoc_sinh.xlsx',{bookType:'xlsx'});
+}
+
+function generateStudentUsername(name,className,accounts){
+  const base=(normalizeLookupText(name).replace(/\s+/g,'') || 'hocsinh') + (normalizeClassLookup(className) || '');
+  let candidate=base || 'hocsinh';
+  let counter=1;
+  const used=new Set((accounts||[]).map(item=>String(item.username||'').trim().toLowerCase()));
+  while(used.has(candidate.toLowerCase())){
+    counter++;
+    candidate=base + counter;
+  }
+  return candidate;
+}
+
+function generateStudentPassword(){
+  return 'hs' + Math.floor(100000 + Math.random()*900000);
+}
+
 
 function presentationMode(){
   if(document.documentElement.requestFullscreen){
@@ -2469,11 +4790,30 @@ document.getElementById("commentModal").addEventListener("click",function(e){
 document.getElementById("studentCommentModal").addEventListener("click",function(e){
   if(e.target.id==="studentCommentModal") closeStudentCommentModal();
 });
+document.getElementById("studentLoginModal").addEventListener("click",function(e){
+  if(e.target.id==="studentLoginModal") closeStudentLogin();
+});
+document.getElementById("forgotPasswordModal").addEventListener("click",function(e){
+  if(e.target.id==="forgotPasswordModal") closeForgotPasswordModal();
+});
+document.getElementById("changePasswordModal").addEventListener("click",function(e){
+  if(e.target.id==="changePasswordModal") closeChangePasswordModal();
+});
+document.getElementById("createStudentAccountModal").addEventListener("click",function(e){
+  if(e.target.id==="createStudentAccountModal") closeCreateStudentAccountModal();
+});
+document.getElementById("studentAccountUploadModal").addEventListener("click",function(e){
+  if(e.target.id==="studentAccountUploadModal") closeStudentAccountUploadModal();
+});
 
 document.addEventListener("keydown",function(e){
   const loginOpen=document.getElementById("loginModal").classList.contains("show");
   const commentOpen=document.getElementById("commentModal").classList.contains("show");
   const studentCommentOpen=document.getElementById("studentCommentModal").classList.contains("show");
+  const studentLoginOpen=document.getElementById("studentLoginModal").classList.contains("show");
+  const forgotOpen=document.getElementById("forgotPasswordModal").classList.contains("show");
+  const changePassOpen=document.getElementById("changePasswordModal").classList.contains("show");
+  const createAccountOpen=document.getElementById("createStudentAccountModal").classList.contains("show");
 
   if(e.key==="F5"){
     saveUiState();
@@ -2486,24 +4826,53 @@ document.addEventListener("keydown",function(e){
   }
   if(commentOpen && e.key==="Escape") closeCommentModal();
   if(studentCommentOpen && e.key==="Escape") closeStudentCommentModal();
+  if(studentLoginOpen){
+    if(e.key==="Escape") closeStudentLogin();
+    if(e.key==="Enter") studentLogin();
+  }
+  if(forgotOpen && e.key==="Escape") closeForgotPasswordModal();
+  if(changePassOpen && e.key==="Escape") closeChangePasswordModal();
+  if(createAccountOpen){
+    if(e.key==="Escape") closeCreateStudentAccountModal();
+    if(e.key==="Enter") createOwnStudentAccount();
+  }
 });
 
 window.addEventListener("beforeunload",saveUiState);
 
-document.addEventListener('DOMContentLoaded',()=>{
-  bindGlobalAudioUnlock();
-  resetAudio(clickSound);
-  resetAudio(clapSound);
-  resetAudio(wrongSound);
-  showWelcomeSequence();
-
-  setLevel(1,document.querySelectorAll(".level-btn")[0]);
-  bindStateInputs();
-  handleStudentNameInput();
-  handleSchoolNameInput();
-  restoreUiState();
-  toggleViewCommentButton();
+['pointerdown','mousedown','touchstart','keydown'].forEach(evt=>{
+  document.addEventListener(evt,()=>{
+    unlockAudio();
+    playWelcomeSound();
+  },{once:true,capture:true});
 });
+
+window.addEventListener('DOMContentLoaded',scheduleWelcomeSoundRetries,{once:true});
+window.addEventListener('load',scheduleWelcomeSoundRetries,{once:true});
+window.addEventListener('pageshow',scheduleWelcomeSoundRetries,{once:true});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible') scheduleWelcomeSoundRetries();
+});
+clapSound.addEventListener('canplaythrough',playWelcomeSound,{once:true});
+document.body.classList.remove("game-active");
+
+const reviewModal=document.getElementById("reviewResultModal");
+if(reviewModal){ reviewModal.classList.remove("show"); reviewModal.style.display="none"; }
+showWelcomeSequence();
+
+getTeacherAccounts();
+updateStudentAuthUi();
+setInputsLocked(true);
+setLevel(1,document.querySelectorAll(".level-btn")[0]);
+bindStateInputs();
+handleStudentNameInput();
+handleSchoolNameInput();
+restoreUiState();
+toggleViewCommentButton();
+
+window.addEventListener('resize',updateBottomActionRowSpacing);
+
+initPasswordToggles();
 </script>
 </body>
 </html>
