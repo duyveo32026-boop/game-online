@@ -1494,81 +1494,33 @@ async function speakVietnameseMale(text,forceSpeak=false){
 
   const now=Date.now();
   const dedupeKey=`${forceSpeak?'1':'0'}|${spokenText}`;
+
   if(!forceSpeak && dedupeKey===voicePromptLastKey && now-voicePromptLastAt<250){
     return;
   }
+
   voicePromptLastKey=dedupeKey;
   voicePromptLastAt=now;
 
   stopVoicePromptQueue();
 
-  const normalizedReadText=spokenText
-    .replace(/\s+/g,' ')
-    .replace(/[“”]/g,'"')
-    .replace(/[‘’]/g,"'")
-    .trim();
-
-  const apiKey=String((AI_TTS_CONFIG&&AI_TTS_CONFIG.apiKey)||'').trim();
-  if(apiKey && apiKey!=='DAN_OPENAI_API_KEY_VAO_DAY'){
-    const audioUrl=await requestOpenAITtsUrl(normalizedReadText);
-    if(audioUrl){
-      voicePromptQueue=[{source:'openai',url:audioUrl}];
-      playNextVoicePromptInQueue();
-      return;
-    }
-  }
-
   try{
-    if('speechSynthesis' in window){
-      const loadVoices=()=>new Promise(resolve=>{
-        let done=false;
-        const finish=()=>{
-          if(done) return;
-          done=true;
-          resolve(window.speechSynthesis.getVoices()||[]);
-        };
-        const existing=window.speechSynthesis.getVoices()||[];
-        if(existing.length){
-          finish();
-          return;
-        }
-        const timer=setTimeout(()=>{
-          window.speechSynthesis.removeEventListener('voiceschanged',onChanged);
-          finish();
-        },350);
-        const onChanged=()=>{
-          clearTimeout(timer);
-          window.speechSynthesis.removeEventListener('voiceschanged',onChanged);
-          finish();
-        };
-        window.speechSynthesis.addEventListener('voiceschanged',onChanged,{once:true});
-      });
+    const fallbackChunks=splitVoicePromptText(spokenText,170).map(item=>({
+      source:'google',
+      url:buildGoogleTranslateTtsUrl(item)
+    }));
 
-      const voices=await loadVoices();
-      const viVoice=voices.find(v=>/^vi([_-]|$)/i.test(String(v.lang||'')));
-      if(viVoice){
-        window.speechSynthesis.cancel();
-        const utter=new SpeechSynthesisUtterance(normalizedReadText);
-        utter.lang='vi-VN';
-        utter.rate=1.12;
-        utter.pitch=1;
-        utter.volume=1;
-        utter.voice=viVoice;
-        window.speechSynthesis.speak(utter);
-        return;
-      }
-    }
+    if(!fallbackChunks.length) return;
+
+    voicePromptQueue=fallbackChunks;
+
+    setTimeout(()=>{
+      playNextVoicePromptInQueue();
+    },50);
+
   }catch(err){
-    console.warn('speechSynthesis tiếng Việt lỗi:',err);
+    console.warn('Lỗi giọng đọc tiếng Việt:',err);
   }
-
-  const fallbackChunks=splitVoicePromptText(normalizedReadText,160).map(item=>({
-    source:'google',
-    url:buildGoogleTranslateTtsUrl(item)
-  }));
-  if(!fallbackChunks.length) return;
-  voicePromptQueue=fallbackChunks;
-  playNextVoicePromptInQueue();
 }
 
 let welcomeAudioPlayed=false;
@@ -3742,6 +3694,17 @@ function teacherLogin(){
 }
 
 function openCommentModal(name,className,schoolName,level,attemptRecord){
+  if(arguments.length===1 && Number.isInteger(Number(name))){
+    const data=(JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[]).map(item=>normalizeStoredAttempt(item));
+    const record=data[Number(name)];
+    if(!record) return;
+    name=record.name||"";
+    className=record.className||"";
+    schoolName=record.schoolName||"";
+    level=record.level||1;
+    attemptRecord=record;
+  }
+
   const infoHtml=[
     `<b>Học sinh:</b> ${escapeHtml(name||"")}`,
     `<b>Lớp:</b> ${escapeHtml(className||"")}`,
