@@ -1213,9 +1213,9 @@ canvas{
   </div>
 </div>
 
-<audio id="clickSound" src="sound/click.mp3?v=20260416"></audio>
-<audio id="clapSound" src="sound/clap.mp3?v=20260416" preload="auto" autoplay playsinline></audio>
-<audio id="wrongSound" src="sound/wrong.mp3?v=20260416"></audio>
+<audio id="clickSound" src="sound/click.mp3"></audio>
+<audio id="clapSound" src="sound/clap.mp3" preload="auto" autoplay playsinline></audio>
+<audio id="wrongSound" src="sound/wrong.mp3"></audio>
 <audio id="voicePromptAudio" preload="auto"></audio>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1233,9 +1233,9 @@ const wrongSound=document.getElementById("wrongSound");
 
 const voicePromptAudio=document.getElementById("voicePromptAudio");
 
-cconst AI_TTS_CONFIG={
+const AI_TTS_CONFIG={
   provider:"openai",
-  apiKey:"sk-...API_KEY_THAT_CUA_BAN...",
+  apiKey:"DAN_OPENAI_API_KEY_VAO_DAY",
   endpoint:"https://api.openai.com/v1/audio/speech",
   model:"gpt-4o-mini-tts",
   voice:"cedar",
@@ -1502,11 +1502,30 @@ async function speakVietnameseMale(text,forceSpeak=false){
 
   stopVoicePromptQueue();
 
-  const audioUrl=await requestOpenAITtsUrl(spokenText);
-  if(audioUrl){
-    voicePromptQueue=[{source:'openai',url:audioUrl}];
-    playNextVoicePromptInQueue();
-    return;
+  try{
+    if('speechSynthesis' in window){
+      window.speechSynthesis.cancel();
+
+      const utter=new SpeechSynthesisUtterance(spokenText);
+      utter.lang='vi-VN';
+      utter.rate=1.2;
+      utter.pitch=1;
+      utter.volume=1;
+
+      const voices=window.speechSynthesis.getVoices() || [];
+      const viVoice=
+        voices.find(v => /vi[-_]?VN/i.test(v.lang)) ||
+        voices.find(v => /^vi/i.test(v.lang));
+
+      if(viVoice){
+        utter.voice=viVoice;
+      }
+
+      window.speechSynthesis.speak(utter);
+      return;
+    }
+  }catch(err){
+    console.warn('speechSynthesis lỗi:',err);
   }
 
   const fallbackChunks=splitVoicePromptText(spokenText,170).map(item=>({
@@ -3689,17 +3708,6 @@ function teacherLogin(){
 }
 
 function openCommentModal(name,className,schoolName,level,attemptRecord){
-  if(arguments.length===1 && Number.isInteger(Number(name))){
-    const data=(JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[]).map(item=>normalizeStoredAttempt(item));
-    const record=data[Number(name)];
-    if(!record) return;
-    name=record.name||"";
-    className=record.className||"";
-    schoolName=record.schoolName||"";
-    level=record.level||1;
-    attemptRecord=record;
-  }
-
   const infoHtml=[
     `<b>Học sinh:</b> ${escapeHtml(name||"")}`,
     `<b>Lớp:</b> ${escapeHtml(className||"")}`,
