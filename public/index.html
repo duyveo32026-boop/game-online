@@ -1492,42 +1492,8 @@ async function speakVietnameseMale(text,forceSpeak=false){
   const spokenText=getVoiceReadText(text);
   if(!spokenText) return;
 
-  const normalizeVietnameseReadText=(input)=>String(input||'')
-    .replace(/\r?\n+/g,'. ')
-    .replace(/\(a\+b\)²/gi,'a cộng b bình phương')
-    .replace(/\(a-b\)²/gi,'a trừ b bình phương')
-    .replace(/a²-b²/gi,'a bình phương trừ b bình phương')
-    .replace(/\(a\+b\)³/gi,'a cộng b lập phương')
-    .replace(/\(a-b\)³/gi,'a trừ b lập phương')
-    .replace(/a³\+b³/gi,'a lập phương cộng b lập phương')
-    .replace(/a³-b³/gi,'a lập phương trừ b lập phương')
-    .replace(/\(a-b\)\(a\+b\)/gi,'mở ngoặc a trừ b đóng ngoặc, mở ngoặc a cộng b đóng ngoặc')
-    .replace(/\(a\+b\)\(a²-ab\+b²\)/gi,'mở ngoặc a cộng b đóng ngoặc, mở ngoặc a bình phương trừ a nhân b cộng b bình phương đóng ngoặc')
-    .replace(/\(a-b\)\(a²\+ab\+b²\)/gi,'mở ngoặc a trừ b đóng ngoặc, mở ngoặc a bình phương cộng a nhân b cộng b bình phương đóng ngoặc')
-    .replace(/a²/gi,'a bình phương')
-    .replace(/b²/gi,'b bình phương')
-    .replace(/a³/gi,'a lập phương')
-    .replace(/b³/gi,'b lập phương')
-    .replace(/2ab/gi,'hai a b')
-    .replace(/3a²b/gi,'ba a bình phương b')
-    .replace(/3ab²/gi,'ba a b bình phương')
-    .replace(/ab/gi,'a b')
-    .replace(/\+/g,' cộng ')
-    .replace(/=/g,' bằng ')
-    .replace(/-/g,' trừ ')
-    .replace(/×/g,' nhân ')
-    .replace(/\*/g,' nhân ')
-    .replace(/\//g,' chia ')
-    .replace(/²/g,' bình phương ')
-    .replace(/³/g,' lập phương ')
-    .replace(/\(/g,' mở ngoặc ')
-    .replace(/\)/g,' đóng ngoặc ')
-    .replace(/\s+/g,' ')
-    .trim();
-
-  const finalText=normalizeVietnameseReadText(spokenText);
   const now=Date.now();
-  const dedupeKey=`${forceSpeak?'1':'0'}|${finalText}`;
+  const dedupeKey=`${forceSpeak?'1':'0'}|${spokenText}`;
   if(!forceSpeak && dedupeKey===voicePromptLastKey && now-voicePromptLastAt<250){
     return;
   }
@@ -1536,7 +1502,67 @@ async function speakVietnameseMale(text,forceSpeak=false){
 
   stopVoicePromptQueue();
 
-  const fallbackChunks=splitVoicePromptText(finalText,170).map(item=>({
+  const normalizedReadText=spokenText
+    .replace(/\s+/g,' ')
+    .replace(/[“”]/g,'"')
+    .replace(/[‘’]/g,"'")
+    .trim();
+
+  const apiKey=String((AI_TTS_CONFIG&&AI_TTS_CONFIG.apiKey)||'').trim();
+  if(apiKey && apiKey!=='DAN_OPENAI_API_KEY_VAO_DAY'){
+    const audioUrl=await requestOpenAITtsUrl(normalizedReadText);
+    if(audioUrl){
+      voicePromptQueue=[{source:'openai',url:audioUrl}];
+      playNextVoicePromptInQueue();
+      return;
+    }
+  }
+
+  try{
+    if('speechSynthesis' in window){
+      const loadVoices=()=>new Promise(resolve=>{
+        let done=false;
+        const finish=()=>{
+          if(done) return;
+          done=true;
+          resolve(window.speechSynthesis.getVoices()||[]);
+        };
+        const existing=window.speechSynthesis.getVoices()||[];
+        if(existing.length){
+          finish();
+          return;
+        }
+        const timer=setTimeout(()=>{
+          window.speechSynthesis.removeEventListener('voiceschanged',onChanged);
+          finish();
+        },350);
+        const onChanged=()=>{
+          clearTimeout(timer);
+          window.speechSynthesis.removeEventListener('voiceschanged',onChanged);
+          finish();
+        };
+        window.speechSynthesis.addEventListener('voiceschanged',onChanged,{once:true});
+      });
+
+      const voices=await loadVoices();
+      const viVoice=voices.find(v=>/^vi([_-]|$)/i.test(String(v.lang||'')));
+      if(viVoice){
+        window.speechSynthesis.cancel();
+        const utter=new SpeechSynthesisUtterance(normalizedReadText);
+        utter.lang='vi-VN';
+        utter.rate=1.12;
+        utter.pitch=1;
+        utter.volume=1;
+        utter.voice=viVoice;
+        window.speechSynthesis.speak(utter);
+        return;
+      }
+    }
+  }catch(err){
+    console.warn('speechSynthesis tiếng Việt lỗi:',err);
+  }
+
+  const fallbackChunks=splitVoicePromptText(normalizedReadText,160).map(item=>({
     source:'google',
     url:buildGoogleTranslateTtsUrl(item)
   }));
