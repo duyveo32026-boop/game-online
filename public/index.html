@@ -1492,8 +1492,42 @@ async function speakVietnameseMale(text,forceSpeak=false){
   const spokenText=getVoiceReadText(text);
   if(!spokenText) return;
 
+  const normalizeVietnameseReadText=(input)=>String(input||'')
+    .replace(/\r?\n+/g,'. ')
+    .replace(/\(a\+b\)²/gi,'a cộng b bình phương')
+    .replace(/\(a-b\)²/gi,'a trừ b bình phương')
+    .replace(/a²-b²/gi,'a bình phương trừ b bình phương')
+    .replace(/\(a\+b\)³/gi,'a cộng b lập phương')
+    .replace(/\(a-b\)³/gi,'a trừ b lập phương')
+    .replace(/a³\+b³/gi,'a lập phương cộng b lập phương')
+    .replace(/a³-b³/gi,'a lập phương trừ b lập phương')
+    .replace(/\(a-b\)\(a\+b\)/gi,'mở ngoặc a trừ b đóng ngoặc, mở ngoặc a cộng b đóng ngoặc')
+    .replace(/\(a\+b\)\(a²-ab\+b²\)/gi,'mở ngoặc a cộng b đóng ngoặc, mở ngoặc a bình phương trừ a nhân b cộng b bình phương đóng ngoặc')
+    .replace(/\(a-b\)\(a²\+ab\+b²\)/gi,'mở ngoặc a trừ b đóng ngoặc, mở ngoặc a bình phương cộng a nhân b cộng b bình phương đóng ngoặc')
+    .replace(/a²/gi,'a bình phương')
+    .replace(/b²/gi,'b bình phương')
+    .replace(/a³/gi,'a lập phương')
+    .replace(/b³/gi,'b lập phương')
+    .replace(/2ab/gi,'hai a b')
+    .replace(/3a²b/gi,'ba a bình phương b')
+    .replace(/3ab²/gi,'ba a b bình phương')
+    .replace(/ab/gi,'a b')
+    .replace(/\+/g,' cộng ')
+    .replace(/=/g,' bằng ')
+    .replace(/-/g,' trừ ')
+    .replace(/×/g,' nhân ')
+    .replace(/\*/g,' nhân ')
+    .replace(/\//g,' chia ')
+    .replace(/²/g,' bình phương ')
+    .replace(/³/g,' lập phương ')
+    .replace(/\(/g,' mở ngoặc ')
+    .replace(/\)/g,' đóng ngoặc ')
+    .replace(/\s+/g,' ')
+    .trim();
+
+  const finalText=normalizeVietnameseReadText(spokenText);
   const now=Date.now();
-  const dedupeKey=`${forceSpeak?'1':'0'}|${spokenText}`;
+  const dedupeKey=`${forceSpeak?'1':'0'}|${finalText}`;
   if(!forceSpeak && dedupeKey===voicePromptLastKey && now-voicePromptLastAt<250){
     return;
   }
@@ -1502,7 +1536,7 @@ async function speakVietnameseMale(text,forceSpeak=false){
 
   stopVoicePromptQueue();
 
-  const fallbackChunks=splitVoicePromptText(spokenText,170).map(item=>({
+  const fallbackChunks=splitVoicePromptText(finalText,170).map(item=>({
     source:'google',
     url:buildGoogleTranslateTtsUrl(item)
   }));
