@@ -1502,32 +1502,6 @@ async function speakVietnameseMale(text,forceSpeak=false){
 
   stopVoicePromptQueue();
 
-  try{
-    if('speechSynthesis' in window){
-      window.speechSynthesis.cancel();
-
-      const utter=new SpeechSynthesisUtterance(spokenText);
-      utter.lang='vi-VN';
-      utter.rate=1.2;
-      utter.pitch=1;
-      utter.volume=1;
-
-      const voices=window.speechSynthesis.getVoices() || [];
-      const viVoice=
-        voices.find(v => /vi[-_]?VN/i.test(v.lang)) ||
-        voices.find(v => /^vi/i.test(v.lang));
-
-      if(viVoice){
-        utter.voice=viVoice;
-      }
-
-      window.speechSynthesis.speak(utter);
-      return;
-    }
-  }catch(err){
-    console.warn('speechSynthesis lỗi:',err);
-  }
-
   const fallbackChunks=splitVoicePromptText(spokenText,170).map(item=>({
     source:'google',
     url:buildGoogleTranslateTtsUrl(item)
