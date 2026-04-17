@@ -4134,38 +4134,25 @@ function closeStudentLogin(){
   document.getElementById('studentLoginModal').classList.remove('show');
 }
 
+
+function normalizeLoginCredential(value){
+  return String(value||'')
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\uFEFF]/g,'')
+    .replace(/[“”]/g,'"')
+    .replace(/[‘’]/g,"'")
+    .replace(/\u00A0/g,' ')
+    .trim()
+    .replace(/\s+/g,' ');
+}
+
 function studentLogin(){
-  const username=document.getElementById('studentUser').value.trim();
-  const password=document.getElementById('studentPass').value.trim();
-  const normalizedUser=normalizeText(username);
-  const normalizedLookupUser=normalizeLookupText(username);
-  const accounts=getStudentAccounts();
-
-  let account=accounts.find(item=>
-    String(item.username||'').trim()===username &&
-    String(item.password||'').trim()===password
+  const username=normalizeLoginCredential(document.getElementById('studentUser').value);
+  const password=normalizeLoginCredential(document.getElementById('studentPass').value);
+  const account=getStudentAccounts().find(item=>
+    normalizeLoginCredential(item.username||'')===username &&
+    normalizeLoginCredential(item.password||'')===password
   );
-
-  if(!account){
-    const matchedByName=accounts.filter(item=>
-      normalizeText(item.name||'')===normalizedUser &&
-      String(item.password||'').trim()===password
-    );
-    if(matchedByName.length===1){
-      account=matchedByName[0];
-    }
-  }
-
-  if(!account){
-    const matchedByLooseName=accounts.filter(item=>
-      normalizeLookupText(item.name||'')===normalizedLookupUser &&
-      String(item.password||'').trim()===password
-    );
-    if(matchedByLooseName.length===1){
-      account=matchedByLooseName[0];
-    }
-  }
-
   if(!account){
     document.getElementById('studentLoginError').innerText='Sai tài khoản hoặc mật khẩu học sinh.';
     return;
