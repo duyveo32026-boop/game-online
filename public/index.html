@@ -3039,8 +3039,6 @@ function saveAttempt(completed,statusText){
 
 function startGame(){
   unlockAudio();
-  unlockVoicePromptAudio();
-  syncMobileOrientationFullscreen();
 
   const name=document.getElementById("studentName").value.trim();
   const className=document.getElementById("className").value.trim();
@@ -4139,7 +4137,35 @@ function closeStudentLogin(){
 function studentLogin(){
   const username=document.getElementById('studentUser').value.trim();
   const password=document.getElementById('studentPass').value.trim();
-  const account=getStudentAccounts().find(item=>String(item.username||'').trim()===username && String(item.password||'').trim()===password);
+  const normalizedUser=normalizeText(username);
+  const normalizedLookupUser=normalizeLookupText(username);
+  const accounts=getStudentAccounts();
+
+  let account=accounts.find(item=>
+    String(item.username||'').trim()===username &&
+    String(item.password||'').trim()===password
+  );
+
+  if(!account){
+    const matchedByName=accounts.filter(item=>
+      normalizeText(item.name||'')===normalizedUser &&
+      String(item.password||'').trim()===password
+    );
+    if(matchedByName.length===1){
+      account=matchedByName[0];
+    }
+  }
+
+  if(!account){
+    const matchedByLooseName=accounts.filter(item=>
+      normalizeLookupText(item.name||'')===normalizedLookupUser &&
+      String(item.password||'').trim()===password
+    );
+    if(matchedByLooseName.length===1){
+      account=matchedByLooseName[0];
+    }
+  }
+
   if(!account){
     document.getElementById('studentLoginError').innerText='Sai tài khoản hoặc mật khẩu học sinh.';
     return;
@@ -5020,49 +5046,10 @@ function generateStudentPassword(){
 }
 
 
-function isMobileViewport(){
-  return /Android|iPhone|iPad|iPod|Mobile|Windows Phone|webOS|BlackBerry/i.test(navigator.userAgent||"") || Math.min(window.innerWidth,window.innerHeight)<=900;
-}
-
-function isLandscapeViewport(){
-  if(window.matchMedia){
-    return window.matchMedia("(orientation: landscape)").matches;
-  }
-  return window.innerWidth > window.innerHeight;
-}
-
-function requestGameFullscreen(){
-  const root=document.documentElement;
-  const request=root.requestFullscreen || root.webkitRequestFullscreen || root.msRequestFullscreen;
-  if(request){
-    try{
-      const result=request.call(root);
-      if(result && typeof result.catch==='function') result.catch(()=>{});
-    }catch(err){}
-  }
-}
-
-function exitGameFullscreen(){
-  const exit=document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
-  if(exit){
-    try{
-      const result=exit.call(document);
-      if(result && typeof result.catch==='function') result.catch(()=>{});
-    }catch(err){}
-  }
-}
-
-function syncMobileOrientationFullscreen(){
-  if(!isMobileViewport()) return;
-  if(isLandscapeViewport()){
-    requestGameFullscreen();
-  }else{
-    exitGameFullscreen();
-  }
-}
-
 function presentationMode(){
-  requestGameFullscreen();
+  if(document.documentElement.requestFullscreen){
+    document.documentElement.requestFullscreen();
+  }
 }
 
 function escapeHtml(str){
@@ -5132,18 +5119,6 @@ document.addEventListener("keydown",function(e){
 });
 
 window.addEventListener("beforeunload",saveUiState);
-
-window.addEventListener("orientationchange",()=>{
-  setTimeout(syncMobileOrientationFullscreen,120);
-});
-window.addEventListener("resize",()=>{
-  setTimeout(syncMobileOrientationFullscreen,120);
-});
-document.addEventListener("fullscreenchange",()=>{
-  if(isMobileViewport() && !isLandscapeViewport()){
-    exitGameFullscreen();
-  }
-});
 
 ['pointerdown','mousedown','touchstart','keydown'].forEach(evt=>{
   document.addEventListener(evt,()=>{
