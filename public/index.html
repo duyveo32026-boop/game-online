@@ -1851,25 +1851,6 @@ function safePlay(audio){
   }catch(e){}
 }
 
-function stopAudioNow(audio){
-  if(!audio) return;
-  try{
-    audio.pause();
-    audio.currentTime=0;
-  }catch(e){}
-}
-
-function lockBoardAfterGameOver(){
-  clearAllCardTimers();
-  clearPendingWrongHighlight();
-  lockBoard=true;
-  setGameSessionActive(false);
-  stopAudioNow(clickSound);
-  stopAudioNow(wrongSound);
-  stopAudioNow(clapSound);
-  stopVoicePromptQueue();
-}
-
 function normalizeText(value){
   return String(value||"").trim().toLowerCase().replace(/\s+/g," ");
 }
@@ -3059,6 +3040,7 @@ function saveAttempt(completed,statusText){
 function startGame(){
   unlockAudio();
   unlockVoicePromptAudio();
+  syncMobileOrientationFullscreen();
 
   const name=document.getElementById("studentName").value.trim();
   const className=document.getElementById("className").value.trim();
@@ -3096,9 +3078,13 @@ function startGame(){
       if(t<=0){
         document.getElementById("time").innerText=0;
         clearInterval(timer);
-        lockBoardAfterGameOver();
+        clearAllCardTimers();
+        lockBoard=true;
+        setGameSessionActive(false);
         saveAttempt(false,"Hết giờ");
+        safePlay(wrongSound);
         document.getElementById("formulaBox").innerText="❌ Bạn đã hết thời gian.";
+        interruptAndSpeakVietnameseMale("Hết giờ");
         showImmediateVoiceAlert("Hết giờ","Hết giờ");
         renderFinishBox(false,"Hết giờ");
         return;
@@ -3221,9 +3207,13 @@ function clearPendingWrongHighlight(){
 
 function finishLoseByLives(){
   clearInterval(timer);
-  lockBoardAfterGameOver();
+  clearAllCardTimers();
+  lockBoard=true;
+  setGameSessionActive(false);
   saveAttempt(false,"Hết mạng");
   document.getElementById("formulaBox").innerText="💀 Bạn đã ghép sai nhiều lần.";
+  safePlay(wrongSound);
+  interruptAndSpeakVietnameseMale("Bạn đã ghép sai nhiều lần");
   showImmediateVoiceAlert("Bạn đã ghép sai nhiều lần","Bạn đã ghép sai nhiều lần");
   renderFinishBox(false,"Hết mạng");
 }
@@ -5030,10 +5020,49 @@ function generateStudentPassword(){
 }
 
 
-function presentationMode(){
-  if(document.documentElement.requestFullscreen){
-    document.documentElement.requestFullscreen();
+function isMobileViewport(){
+  return /Android|iPhone|iPad|iPod|Mobile|Windows Phone|webOS|BlackBerry/i.test(navigator.userAgent||"") || Math.min(window.innerWidth,window.innerHeight)<=900;
+}
+
+function isLandscapeViewport(){
+  if(window.matchMedia){
+    return window.matchMedia("(orientation: landscape)").matches;
   }
+  return window.innerWidth > window.innerHeight;
+}
+
+function requestGameFullscreen(){
+  const root=document.documentElement;
+  const request=root.requestFullscreen || root.webkitRequestFullscreen || root.msRequestFullscreen;
+  if(request){
+    try{
+      const result=request.call(root);
+      if(result && typeof result.catch==='function') result.catch(()=>{});
+    }catch(err){}
+  }
+}
+
+function exitGameFullscreen(){
+  const exit=document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+  if(exit){
+    try{
+      const result=exit.call(document);
+      if(result && typeof result.catch==='function') result.catch(()=>{});
+    }catch(err){}
+  }
+}
+
+function syncMobileOrientationFullscreen(){
+  if(!isMobileViewport()) return;
+  if(isLandscapeViewport()){
+    requestGameFullscreen();
+  }else{
+    exitGameFullscreen();
+  }
+}
+
+function presentationMode(){
+  requestGameFullscreen();
 }
 
 function escapeHtml(str){
@@ -5103,6 +5132,18 @@ document.addEventListener("keydown",function(e){
 });
 
 window.addEventListener("beforeunload",saveUiState);
+
+window.addEventListener("orientationchange",()=>{
+  setTimeout(syncMobileOrientationFullscreen,120);
+});
+window.addEventListener("resize",()=>{
+  setTimeout(syncMobileOrientationFullscreen,120);
+});
+document.addEventListener("fullscreenchange",()=>{
+  if(isMobileViewport() && !isLandscapeViewport()){
+    exitGameFullscreen();
+  }
+});
 
 ['pointerdown','mousedown','touchstart','keydown'].forEach(evt=>{
   document.addEventListener(evt,()=>{
