@@ -1851,6 +1851,25 @@ function safePlay(audio){
   }catch(e){}
 }
 
+function stopAudioNow(audio){
+  if(!audio) return;
+  try{
+    audio.pause();
+    audio.currentTime=0;
+  }catch(e){}
+}
+
+function lockBoardAfterGameOver(){
+  clearAllCardTimers();
+  clearPendingWrongHighlight();
+  lockBoard=true;
+  setGameSessionActive(false);
+  stopAudioNow(clickSound);
+  stopAudioNow(wrongSound);
+  stopAudioNow(clapSound);
+  stopVoicePromptQueue();
+}
+
 function normalizeText(value){
   return String(value||"").trim().toLowerCase().replace(/\s+/g," ");
 }
@@ -3077,13 +3096,9 @@ function startGame(){
       if(t<=0){
         document.getElementById("time").innerText=0;
         clearInterval(timer);
-        clearAllCardTimers();
-        lockBoard=true;
-        setGameSessionActive(false);
+        lockBoardAfterGameOver();
         saveAttempt(false,"Hết giờ");
-        safePlay(wrongSound);
         document.getElementById("formulaBox").innerText="❌ Bạn đã hết thời gian.";
-        interruptAndSpeakVietnameseMale("Hết giờ");
         showImmediateVoiceAlert("Hết giờ","Hết giờ");
         renderFinishBox(false,"Hết giờ");
         return;
@@ -3206,13 +3221,9 @@ function clearPendingWrongHighlight(){
 
 function finishLoseByLives(){
   clearInterval(timer);
-  clearAllCardTimers();
-  lockBoard=true;
-  setGameSessionActive(false);
+  lockBoardAfterGameOver();
   saveAttempt(false,"Hết mạng");
   document.getElementById("formulaBox").innerText="💀 Bạn đã ghép sai nhiều lần.";
-  safePlay(wrongSound);
-  interruptAndSpeakVietnameseMale("Bạn đã ghép sai nhiều lần");
   showImmediateVoiceAlert("Bạn đã ghép sai nhiều lần","Bạn đã ghép sai nhiều lần");
   renderFinishBox(false,"Hết mạng");
 }
