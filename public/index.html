@@ -1439,6 +1439,17 @@ function interruptAndSpeakVietnameseMale(text){
   speakVietnameseMale(text,true);
 }
 
+function showImmediateVoiceAlert(message, voiceText=''){
+  const spoken = String(voiceText || message || '').trim();
+  stopVoicePromptQueue();
+  if(spoken){
+    interruptAndSpeakVietnameseMale(spoken);
+  }
+  setTimeout(()=>{
+    alert(message);
+  }, 120);
+}
+
 function playNextVoicePromptInQueue(){
   if(!voicePromptQueue.length){
     voicePromptIsPlaying=false;
@@ -1488,6 +1499,75 @@ voicePromptAudio.addEventListener('error',()=>{
   playNextVoicePromptInQueue();
 });
 
+
+const LOCAL_VOICE_MP3_BASE='MP3/';
+const FORMULA_AUDIO_MAP={
+  "Bình phương của một tổng":"formula1.mp3",
+  "Bình phương của một hiệu":"formula2.mp3",
+  "Hiệu hai bình phương":"formula3.mp3",
+  "Lập phương của một tổng":"formula4.mp3",
+  "Lập phương của một hiệu":"formula5.mp3",
+  "Tổng hai lập phương":"formula6.mp3",
+  "Hiệu hai lập phương":"formula7.mp3"
+};
+
+function buildLocalMp3Url(fileName){
+  return `${LOCAL_VOICE_MP3_BASE}${fileName}`;
+}
+
+function getHintAudioFileByText(text){
+  const value=String(text||'').toLowerCase();
+  if(!value) return 'hint3.mp3';
+  if(value.includes('dấu của hạng tử giữa') || value.includes('dấu cộng') || value.includes('dấu trừ')){
+    return 'hint1.mp3';
+  }
+  if(value.includes('hệ số 1-3-3-1') || value.includes('dạng lập phương') || value.includes('4 hạng tử') || value.includes('hệ số 3')){
+    return 'hint2.mp3';
+  }
+  return 'hint3.mp3';
+}
+
+function getHintDisplayTextByText(text){
+  const fileName=getHintAudioFileByText(text);
+  if(fileName==='hint1.mp3'){
+    return '💡 Gợi ý: Hãy chú ý dấu cộng và dấu trừ trong biểu thức.';
+  }
+  if(fileName==='hint2.mp3'){
+    return '💡 Gợi ý: Em hãy xem lại số mũ và hệ số của hạng tử giữa.';
+  }
+  return '💡 Gợi ý: Hãy đối chiếu với công thức hằng đẳng thức đã học.';
+}
+
+function buildNarrationQueueFromMp3(spokenText){
+  const clean=String(spokenText||'').trim();
+  if(!clean) return [];
+
+  if(clean==='Hết giờ rồi' || clean==='Hết giờ' || clean==='Bạn hết lượt ghép rồi' || clean==='Bạn đã ghép sai nhiều lần'){
+    return [{source:'local_mp3',url:buildLocalMp3Url('lose.mp3')}];
+  }
+
+  if(clean.startsWith('Bạn đúng rồi.')){
+    const formulaName=clean.replace(/^Bạn đúng rồi\.\s*/,'').trim();
+    const queue=[{source:'local_mp3',url:buildLocalMp3Url('correct.mp3')}];
+    const formulaFile=FORMULA_AUDIO_MAP[formulaName];
+    if(formulaFile){
+      queue.push({source:'local_mp3',url:buildLocalMp3Url(formulaFile)});
+    }
+    return queue;
+  }
+
+  if(clean.startsWith('Chúc mừng bạn đã hoàn thành cấp độ')){
+    return [{source:'local_mp3',url:buildLocalMp3Url('level_complete.mp3')}];
+  }
+
+  if(clean.startsWith('Xuất sắc!')){
+    return [{source:'local_mp3',url:buildLocalMp3Url('win.mp3')}];
+  }
+
+  return [{source:'local_mp3',url:buildLocalMp3Url(getHintAudioFileByText(clean))}];
+}
+
+
 async function speakVietnameseMale(text,forceSpeak=false){
   const spokenText=getVoiceReadText(text);
   if(!spokenText) return;
@@ -1505,21 +1585,14 @@ async function speakVietnameseMale(text,forceSpeak=false){
   stopVoicePromptQueue();
 
   try{
-    const fallbackChunks=splitVoicePromptText(spokenText,170).map(item=>({
-      source:'google',
-      url:buildGoogleTranslateTtsUrl(item)
-    }));
-
-    if(!fallbackChunks.length) return;
-
-    voicePromptQueue=fallbackChunks;
-
+    const localQueue=buildNarrationQueueFromMp3(spokenText);
+    if(!localQueue.length) return;
+    voicePromptQueue=localQueue;
     setTimeout(()=>{
       playNextVoicePromptInQueue();
     },50);
-
   }catch(err){
-    console.warn('Lỗi giọng đọc tiếng Việt:',err);
+    console.warn('Lỗi phát mp3 giọng đọc:',err);
   }
 }
 
@@ -2017,6 +2090,7 @@ function renderAccountManager(){
     </div>
     <div class="account-bulk-bar">
       <div class="account-actions-row" style="margin-top:0;">
+        <button type="button" style="background:#0ea5e9;color:#fff;" onclick="downloadAllStudentAccounts()">Tải danh sách người dùng</button>
         <button onclick="toggleSelectAllStudentAccounts()">${allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}</button>
         <button class="delete-btn" onclick="deleteSelectedStudentAccounts()">Xóa tất cả</button>
       </div>
@@ -3007,9 +3081,9 @@ function startGame(){
         setGameSessionActive(false);
         saveAttempt(false,"Hết giờ");
         safePlay(wrongSound);
-        alert("Hết giờ");
         document.getElementById("formulaBox").innerText="❌ Bạn đã hết thời gian.";
-        interruptAndSpeakVietnameseMale("Hết giờ rồi");
+        interruptAndSpeakVietnameseMale("Hết giờ");
+        showImmediateVoiceAlert("Hết giờ","Hết giờ");
         renderFinishBox(false,"Hết giờ");
         return;
       }
@@ -3137,8 +3211,8 @@ function finishLoseByLives(){
   saveAttempt(false,"Hết mạng");
   document.getElementById("formulaBox").innerText="💀 Bạn đã ghép sai nhiều lần.";
   safePlay(wrongSound);
-  alert("Bạn đã ghép sai nhiều lần");
-  interruptAndSpeakVietnameseMale("Bạn hết lượt ghép rồi");
+  interruptAndSpeakVietnameseMale("Bạn đã ghép sai nhiều lần");
+  showImmediateVoiceAlert("Bạn đã ghép sai nhiều lần","Bạn đã ghép sai nhiều lần");
   renderFinishBox(false,"Hết mạng");
 }
 
@@ -3229,7 +3303,12 @@ function handleWrongMatch(a,b){
   const cfg=getLevelConfig(currentLevel);
   const wrongHintText=getSmartWrongHint(a,b);
   document.getElementById("formulaBox").innerText=wrongHintText;
-  interruptAndSpeakVietnameseMale(wrongHintText);
+  const speakWrongHintAfterSound=()=>{
+    wrongSound.removeEventListener('ended',speakWrongHintAfterSound);
+    interruptAndSpeakVietnameseMale(wrongHintText);
+  };
+  wrongSound.removeEventListener('ended',speakWrongHintAfterSound);
+  wrongSound.addEventListener('ended',speakWrongHintAfterSound,{once:true});
 
   clearPendingWrongHighlight();
 
@@ -3362,6 +3441,12 @@ function launchCelebration(){
   overlay.innerHTML="";
   overlay.appendChild(msg);
   overlay.classList.add("show");
+
+  if(currentLevel===7){
+    interruptAndSpeakVietnameseMale("Xuất sắc!");
+  }else{
+    interruptAndSpeakVietnameseMale(`Chúc mừng bạn đã hoàn thành cấp độ ${currentLevel}`);
+  }
 
   for(let i=0;i<140;i++){
     const piece=document.createElement("div");
@@ -4869,6 +4954,51 @@ function downloadLatestImportedStudentAccounts(){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,sheet,'Danh sach hoc sinh');
   XLSX.writeFile(wb,'danh_sach_hoc_sinh.xlsx',{bookType:'xlsx'});
+}
+
+function downloadAllStudentAccounts(){
+  if(typeof XLSX==='undefined'){
+    alert('Thiếu thư viện XLSX để tải danh sách người dùng.');
+    return;
+  }
+  const accounts=[...getStudentAccounts()].sort((a,b)=>String(a.className||'').localeCompare(String(b.className||''),'vi',{sensitivity:'base'}) || String(a.name||'').localeCompare(String(b.name||''),'vi',{sensitivity:'base'}));
+  if(!accounts.length){
+    alert('Chưa có tài khoản học sinh nào để tải xuống.');
+    return;
+  }
+  const orderedAccounts=[...accounts].sort((a,b)=>{
+    const nameA=String(a.name||'').trim();
+    const nameB=String(b.name||'').trim();
+    const partsA=nameA.split(/\s+/).filter(Boolean);
+    const partsB=nameB.split(/\s+/).filter(Boolean);
+    const givenA=partsA.length ? partsA[partsA.length-1] : '';
+    const givenB=partsB.length ? partsB[partsB.length-1] : '';
+    const byGiven=givenA.localeCompare(givenB,'vi',{sensitivity:'base'});
+    if(byGiven!==0) return byGiven;
+    return nameA.localeCompare(nameB,'vi',{sensitivity:'base'});
+  });
+  const rows=[
+    ['STT','Họ tên học sinh','Lớp','Trường','Tài khoản','Mật khẩu','Cập nhật'],
+    ...orderedAccounts.map((item,index)=>[
+      String(index+1),
+      String(item.name||''),
+      String(item.className||''),
+      String(item.schoolName||''),
+      String(item.username||''),
+      String(item.password||''),
+      String(formatDateTime(item.updatedAt||item.createdAt||0)||'')
+    ])
+  ];
+  const sheet=XLSX.utils.aoa_to_sheet(rows);
+  Object.keys(sheet).forEach(key=>{
+    if(key[0]==='!') return;
+    sheet[key].t='s';
+    sheet[key].z='@';
+  });
+  sheet['!cols']=[{wch:8},{wch:28},{wch:12},{wch:28},{wch:20},{wch:16},{wch:22}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,sheet,'Nguoi dung');
+  XLSX.writeFile(wb,'danh_sach_nguoi_dung.xlsx',{bookType:'xlsx'});
 }
 
 function generateStudentUsername(name,className,accounts){
