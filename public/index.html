@@ -1915,6 +1915,114 @@ const STORAGE_RESULTS_KEY="sangtaottnnđ";
 const STORAGE_COMMENTS_KEY="sangtaottnnđ_comments";
 const STORAGE_TEACHER_KEY="sangtaottnnđ_teacher_accounts";
 const STORAGE_STUDENT_KEY="sangtaottnnđ_student_accounts";
+const STORAGE_ATTEMPT_COMMENTS_KEY="STORAGE_ATTEMPT_COMMENTS_KEY";
+let sharedResultsCache=null;
+let sharedResultsDbRef=null;
+let sharedResultsWriting=false;
+let sharedResultsReady=false;
+let sharedResultsReadyResolver=()=>{};
+let sharedResultsReadyPromise=new Promise(resolve=>{ sharedResultsReadyResolver=resolve; });
+
+let sharedAttemptCommentsCache=null;
+let sharedAttemptCommentsDbRef=null;
+let sharedAttemptCommentsWriting=false;
+let sharedAttemptCommentsReady=false;
+let sharedAttemptCommentsReadyResolver=()=>{};
+let sharedAttemptCommentsReadyPromise=new Promise(resolve=>{ sharedAttemptCommentsReadyResolver=resolve; });
+
+function markSharedResultsReady(){
+  if(sharedResultsReady) return;
+  sharedResultsReady=true;
+  sharedResultsReadyResolver(true);
+}
+function markSharedAttemptCommentsReady(){
+  if(sharedAttemptCommentsReady) return;
+  sharedAttemptCommentsReady=true;
+  sharedAttemptCommentsReadyResolver(true);
+}
+function getResultsData(){
+  if(Array.isArray(sharedResultsCache)) return sharedResultsCache.slice();
+  return JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY)||"[]");
+}
+function setResultsData(data){
+  const safeData=Array.isArray(data) ? data.slice() : [];
+  sharedResultsCache=safeData.slice();
+  markSharedResultsReady();
+  localStorage.setItem(STORAGE_RESULTS_KEY,JSON.stringify(safeData));
+  if(sharedResultsDbRef){
+    sharedResultsWriting=true;
+    return sharedResultsDbRef.set(safeData)
+      .catch(err=>{
+        console.error('Lỗi Firebase RESULTS SET:',err);
+        throw err;
+      })
+      .finally(()=>{
+        sharedResultsWriting=false;
+      });
+  }
+  return Promise.resolve();
+}
+function clearResultsData(){
+  sharedResultsCache=[];
+  markSharedResultsReady();
+  localStorage.removeItem(STORAGE_RESULTS_KEY);
+  if(sharedResultsDbRef){
+    sharedResultsWriting=true;
+    return sharedResultsDbRef.set([])
+      .catch(err=>{
+        console.error('Lỗi Firebase RESULTS CLEAR:',err);
+        throw err;
+      })
+      .finally(()=>{
+        sharedResultsWriting=false;
+      });
+  }
+  return Promise.resolve();
+}
+function getAttemptCommentStore(){
+  if(sharedAttemptCommentsCache && typeof sharedAttemptCommentsCache==='object'){
+    return Object.assign({}, sharedAttemptCommentsCache);
+  }
+  return JSON.parse(localStorage.getItem(STORAGE_ATTEMPT_COMMENTS_KEY)||"{}");
+}
+function setAttemptCommentStore(data){
+  const safeData=(data && typeof data==='object') ? Object.assign({}, data) : {};
+  sharedAttemptCommentsCache=Object.assign({}, safeData);
+  markSharedAttemptCommentsReady();
+  localStorage.setItem(STORAGE_ATTEMPT_COMMENTS_KEY, JSON.stringify(safeData));
+  if(sharedAttemptCommentsDbRef){
+    sharedAttemptCommentsWriting=true;
+    return sharedAttemptCommentsDbRef.set(safeData)
+      .catch(err=>{
+        console.error('Lỗi Firebase ATTEMPT COMMENTS SET:',err);
+        throw err;
+      })
+      .finally(()=>{
+        sharedAttemptCommentsWriting=false;
+      });
+  }
+  return Promise.resolve();
+}
+function ensureSharedGameDataSyncStarted(){
+  try{
+    if(typeof initSharedStudentAccountSync==='function'){
+      initSharedStudentAccountSync();
+    }
+  }catch(err){}
+}
+async function waitForSharedGameDataSync(options={}){
+  const timeoutMs=Math.max(1000,Number(options.timeoutMs)||8000);
+  ensureSharedGameDataSyncStarted();
+  let timeoutId=null;
+  try{
+    await Promise.race([
+      Promise.all([sharedResultsReadyPromise, sharedAttemptCommentsReadyPromise]),
+      new Promise(resolve=>{ timeoutId=setTimeout(()=>resolve(false),timeoutMs); })
+    ]);
+  }catch(err){}
+  if(timeoutId) clearTimeout(timeoutId);
+  return sharedResultsReady && sharedAttemptCommentsReady;
+}
 const DEFAULT_TEACHER_ACCOUNTS=[{username:"teacher",password:"123456",displayName:"Giáo viên mặc định"}];
 const cardTimers=new WeakMap();
 
@@ -2315,7 +2423,7 @@ function renderAccountManager(){
 }
 
 function getAllResults(){
-  return (JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[]).map(normalizeStoredAttempt);
+  return getResultsData().map(normalizeStoredAttempt);
 }
 
 function getUniqueStudentRecords(){
@@ -2456,13 +2564,6 @@ function makeAttemptCommentKey(item){
   ].join("|");
 }
 
-function getAttemptCommentStore(){
-  return JSON.parse(localStorage.getItem("STORAGE_ATTEMPT_COMMENTS_KEY"))||{};
-}
-
-function setAttemptCommentStore(data){
-  localStorage.setItem("STORAGE_ATTEMPT_COMMENTS_KEY", JSON.stringify(data));
-}
 
 function findAttemptComment(item){
   if(!item) return "";
@@ -2475,7 +2576,7 @@ function setAttemptComment(item, commentText){
   const store=getAttemptCommentStore();
   const key=makeAttemptCommentKey(item);
   store[key]=String(commentText||"").trim();
-  setAttemptCommentStore(store);
+  setAttemptCommentStore(store).catch(()=>{});
 }
 
 function getEffectiveCorrectPairs(item){
@@ -2507,7 +2608,7 @@ function normalizeStoredAttempt(item){
 }
 
 function getStudentAttempts(name,className,schoolName){
-  const data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
+  const data=getResultsData();
   const inputName=normalizeLookupText(name);
   const inputClass=normalizeClassLookup(className);
   const inputSchool=normalizeSchoolLookup(schoolName);
@@ -3208,6 +3309,7 @@ function refreshLiveStudentAndTeacherViews(){
 }
 
 function saveAttempt(completed,statusText){
+  ensureSharedGameDataSyncStarted();
   if(attemptSaved) return lastSavedAttemptRecord;
   attemptSaved=true;
 
@@ -3216,7 +3318,7 @@ function saveAttempt(completed,statusText){
   const schoolName=document.getElementById("schoolName").value.trim();
   const timeValue=parseInt(document.getElementById("time").innerText,10)||0;
 
-  let data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
+  let data=getResultsData();
   const safeCorrectPairs=Math.max(correctCount, currentMatchedPairs.length, currentAttemptPairs.filter(p=>p && p.status==="correct").length);
   const safeWrongPairs=Math.max(wrongPairCount, currentAttemptPairs.filter(p=>p && p.status==="wrong").length);
   const safeScore=safeCorrectPairs*10;
@@ -3243,7 +3345,7 @@ function saveAttempt(completed,statusText){
   };
   data.push(attemptRecord);
   lastSavedAttemptRecord=attemptRecord;
-  localStorage.setItem(STORAGE_RESULTS_KEY,JSON.stringify(data));
+  setResultsData(data).catch(()=>{});
   refreshLiveStudentAndTeacherViews();
   return attemptRecord;
 }
@@ -3849,7 +3951,7 @@ function checkFinish(){
 }
 
 function openLessonModal(index){
-  const data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
+  const data=getResultsData();
   const student=normalizeStoredAttempt(data[index]);
   if(!student) return;
 
@@ -4030,6 +4132,7 @@ function closeCommentModal(){
 }
 
 function saveTeacherComment(){
+  ensureSharedGameDataSyncStarted();
   const textValue=document.getElementById("teacherCommentText").value.trim();
   const info=(window.activeCommentTarget||{});
   if(!info.name || !info.className || !info.schoolName || !info.attemptRecord){
@@ -4045,7 +4148,7 @@ function saveTeacherComment(){
 }
 
 function renderTeacherPanel(){
-  const data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
+  const data=getResultsData();
   const normalizedData=data.map(item=>normalizeStoredAttempt(item));
   window.teacherResultDataCache=normalizedData;
   const resultList=document.getElementById("resultList");
@@ -4098,11 +4201,11 @@ function renderTeacherPanel(){
 }
 
 function deleteResult(index){
-  let data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
+  let data=getResultsData();
   if(index<0 || index>=data.length) return;
   if(confirm("Bạn có chắc muốn xóa kết quả học sinh này không?")){
     data.splice(index,1);
-    localStorage.setItem(STORAGE_RESULTS_KEY,JSON.stringify(data));
+    setResultsData(data).catch(()=>{});
     renderTeacherPanel();
   }
 }
@@ -4242,7 +4345,7 @@ function drawPieChartsByLevel(data){
 }
 
 function exportCSV(){
-  const data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
+  const data=getResultsData();
   const escapeExcel=(value)=>String(value??'')
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
@@ -5327,12 +5430,28 @@ initPasswordToggles();
     }
   }
 
+  function syncSharedGameDataUi(){
+    try{
+      if(typeof renderTeacherPanel==='function' && teacherLoggedIn){
+        renderTeacherPanel();
+      }
+      if(typeof toggleViewCommentButton==='function') toggleViewCommentButton();
+      if(typeof showStudentComment==='function' && currentStudentDetailOpen){
+        showStudentComment();
+      }
+    }catch(err){
+      console.warn('Lỗi làm mới giao diện kết quả:',err);
+    }
+  }
+
   window.initSharedStudentAccountSync=function initSharedStudentAccountSync(){
     try{
       if(sharedStudentAccountsSyncStarted) return;
       sharedStudentAccountsSyncStarted=true;
       if(typeof firebase==='undefined' || !firebase.apps) {
         markSharedStudentAccountsReady();
+        markSharedResultsReady();
+        markSharedAttemptCommentsReady();
         return;
       }
       if(!firebase.apps.length){
@@ -5340,6 +5459,9 @@ initPasswordToggles();
       }
       const db=firebase.database();
       sharedStudentAccountsDbRef=db.ref('student_accounts');
+      sharedResultsDbRef=db.ref('game_results');
+      sharedAttemptCommentsDbRef=db.ref('attempt_comments');
+
       sharedStudentAccountsDbRef.on('value',snapshot=>{
         if(sharedStudentAccountsWriting) return;
         const value=snapshot.val();
@@ -5352,9 +5474,37 @@ initPasswordToggles();
         console.error('Lỗi Firebase SYNC:',err);
         markSharedStudentAccountsReady();
       });
+
+      sharedResultsDbRef.on('value',snapshot=>{
+        if(sharedResultsWriting) return;
+        const value=snapshot.val();
+        const safeData=Array.isArray(value) ? value : [];
+        sharedResultsCache=safeData.slice();
+        markSharedResultsReady();
+        localStorage.setItem(STORAGE_RESULTS_KEY,JSON.stringify(safeData));
+        syncSharedGameDataUi();
+      },err=>{
+        console.error('Lỗi Firebase RESULTS SYNC:',err);
+        markSharedResultsReady();
+      });
+
+      sharedAttemptCommentsDbRef.on('value',snapshot=>{
+        if(sharedAttemptCommentsWriting) return;
+        const value=snapshot.val();
+        const safeData=(value && typeof value==='object') ? value : {};
+        sharedAttemptCommentsCache=Object.assign({}, safeData);
+        markSharedAttemptCommentsReady();
+        localStorage.setItem(STORAGE_ATTEMPT_COMMENTS_KEY,JSON.stringify(safeData));
+        syncSharedGameDataUi();
+      },err=>{
+        console.error('Lỗi Firebase ATTEMPT COMMENTS SYNC:',err);
+        markSharedAttemptCommentsReady();
+      });
     }catch(err){
       console.error('Lỗi khởi tạo Firebase:',err);
       markSharedStudentAccountsReady();
+      markSharedResultsReady();
+      markSharedAttemptCommentsReady();
     }
   }
 
