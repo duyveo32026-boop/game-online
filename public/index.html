@@ -1940,18 +1940,49 @@ function markSharedAttemptCommentsReady(){
   sharedAttemptCommentsReady=true;
   sharedAttemptCommentsReadyResolver(true);
 }
+function makeAttemptSyncKey(item){
+  const safeItem=item||{};
+  return [
+    normalizeText(safeItem.username||""),
+    makeStudentKey(safeItem.name||"",safeItem.className||"",safeItem.schoolName||""),
+    Number(safeItem.level)||1,
+    Number(safeItem.playedAt)||0
+  ].join("|");
+}
+function mergeAttemptLists(preferredList,baseList){
+  const mergedMap=new Map();
+  (Array.isArray(baseList)?baseList:[]).forEach(item=>{
+    const normalized=normalizeStoredAttempt(item);
+    mergedMap.set(makeAttemptSyncKey(normalized),normalized);
+  });
+  (Array.isArray(preferredList)?preferredList:[]).forEach(item=>{
+    const normalized=normalizeStoredAttempt(item);
+    mergedMap.set(makeAttemptSyncKey(normalized),normalized);
+  });
+  return Array.from(mergedMap.values()).sort((a,b)=>{
+    return Number(a.playedAt||0)-Number(b.playedAt||0);
+  });
+}
 function getResultsData(){
   if(Array.isArray(sharedResultsCache)) return sharedResultsCache.slice();
   return JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY)||"[]");
 }
 function setResultsData(data){
-  const safeData=Array.isArray(data) ? data.slice() : [];
+  const safeData=Array.isArray(data) ? data.map(item=>normalizeStoredAttempt(item)) : [];
   sharedResultsCache=safeData.slice();
   markSharedResultsReady();
   localStorage.setItem(STORAGE_RESULTS_KEY,JSON.stringify(safeData));
   if(sharedResultsDbRef){
     sharedResultsWriting=true;
-    return sharedResultsDbRef.set(safeData)
+    return sharedResultsDbRef.once('value')
+      .then(snapshot=>{
+        const remoteValue=snapshot.val();
+        const remoteData=Array.isArray(remoteValue) ? remoteValue : [];
+        const mergedData=mergeAttemptLists(safeData, remoteData);
+        sharedResultsCache=mergedData.slice();
+        localStorage.setItem(STORAGE_RESULTS_KEY,JSON.stringify(mergedData));
+        return sharedResultsDbRef.set(mergedData).then(()=>mergedData);
+      })
       .catch(err=>{
         console.error('Lỗi Firebase RESULTS SET:',err);
         throw err;
@@ -1960,7 +1991,7 @@ function setResultsData(data){
         sharedResultsWriting=false;
       });
   }
-  return Promise.resolve();
+  return Promise.resolve(safeData);
 }
 function clearResultsData(){
   sharedResultsCache=[];
@@ -1992,7 +2023,15 @@ function setAttemptCommentStore(data){
   localStorage.setItem(STORAGE_ATTEMPT_COMMENTS_KEY, JSON.stringify(safeData));
   if(sharedAttemptCommentsDbRef){
     sharedAttemptCommentsWriting=true;
-    return sharedAttemptCommentsDbRef.set(safeData)
+    return sharedAttemptCommentsDbRef.once('value')
+      .then(snapshot=>{
+        const remoteValue=snapshot.val();
+        const remoteData=(remoteValue && typeof remoteValue==='object') ? remoteValue : {};
+        const mergedData=Object.assign({}, remoteData, safeData);
+        sharedAttemptCommentsCache=Object.assign({}, mergedData);
+        localStorage.setItem(STORAGE_ATTEMPT_COMMENTS_KEY, JSON.stringify(mergedData));
+        return sharedAttemptCommentsDbRef.set(mergedData).then(()=>mergedData);
+      })
       .catch(err=>{
         console.error('Lỗi Firebase ATTEMPT COMMENTS SET:',err);
         throw err;
@@ -2001,7 +2040,7 @@ function setAttemptCommentStore(data){
         sharedAttemptCommentsWriting=false;
       });
   }
-  return Promise.resolve();
+  return Promise.resolve(safeData);
 }
 function ensureSharedGameDataSyncStarted(){
   try{
