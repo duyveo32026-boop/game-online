@@ -1640,6 +1640,8 @@ let welcomeAudioPlayed=false;
 let welcomeAudioAttempting=false;
 let welcomeSoundContext=null;
 let welcomeRetryTimers=[];
+let welcomeInteractionBound=false;
+let welcomeButtonAudioBound=false;
 
 function playWelcomeFallbackFanfare(){
   try{
@@ -1687,11 +1689,57 @@ function playWelcomeSound(){
     if(playPromise && typeof playPromise.then==='function'){
       playPromise.then(()=>{
         markWelcomeAudioPlayed();
-      }).catch(()=>{});
+      }).catch(()=>{
+        try{
+          if(welcomeSoundContext && welcomeSoundContext.state==='suspended'){
+            welcomeSoundContext.resume().catch(()=>{});
+          }
+        }catch(e){}
+      });
     }else{
       markWelcomeAudioPlayed();
     }
   }catch(e){}
+}
+
+function bindWelcomeAudioInteraction(){
+  if(welcomeInteractionBound) return;
+  welcomeInteractionBound=true;
+
+  const tryPlayFromInteraction=()=>{
+    if(welcomeAudioPlayed) return;
+    playWelcomeSound();
+    if(!welcomeAudioPlayed){
+      setTimeout(()=>{
+        if(!welcomeAudioPlayed) playWelcomeSound();
+      },120);
+    }
+  };
+
+  ['touchstart','pointerdown','mousemove','pointermove','click'].forEach(evt=>{
+    document.addEventListener(evt, tryPlayFromInteraction, {
+      once:true,
+      passive:true,
+      capture:true
+    });
+  });
+
+  const bindRulesButton=()=>{
+    if(welcomeButtonAudioBound) return;
+    const btn=document.querySelector('#rulesOverlay .rules-actions button');
+    if(!btn) return;
+    welcomeButtonAudioBound=true;
+    btn.addEventListener('click', ()=>{
+      if(!welcomeAudioPlayed) playWelcomeSound();
+    }, {capture:true});
+  };
+
+  bindRulesButton();
+  const delayedBind=setInterval(()=>{
+    bindRulesButton();
+    if(welcomeButtonAudioBound || welcomeAudioPlayed) clearInterval(delayedBind);
+  },300);
+  setTimeout(()=>clearInterval(delayedBind),5000);
 }
 
 function scheduleWelcomeSoundRetries(){
@@ -1737,10 +1785,12 @@ function showWelcomeSequence(){
   if(!welcome||!rules) return;
   welcome.classList.add('show');
   createWelcomeFireworks();
+  bindWelcomeAudioInteraction();
   scheduleWelcomeSoundRetries();
   setTimeout(()=>{
     welcome.classList.remove('show');
     rules.classList.add('show');
+    bindWelcomeAudioInteraction();
   },4000);
 }
 
