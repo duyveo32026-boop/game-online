@@ -963,15 +963,17 @@ html.mobile-landscape body{
 }
 html.mobile-landscape{
   height:100%;
+  --mobile-landscape-scale:1;
 }
 html.mobile-landscape body{
-  overflow-x:auto;
+  overflow-x:hidden;
   overflow-y:auto;
   -webkit-text-size-adjust:100%;
   min-width:100vw;
   min-height:100vh;
   min-height:100dvh;
 }
+html.mobile-landscape h1,
 html.mobile-landscape .topBar,
 html.mobile-landscape #infoBar,
 html.mobile-landscape #levelBar,
@@ -980,10 +982,18 @@ html.mobile-landscape #formulaBox,
 html.mobile-landscape #finishBox,
 html.mobile-landscape #bottomActionRow,
 html.mobile-landscape #teacherPanel{
-  width:min(1180px,96vw);
+  width:1180px;
+  max-width:1180px;
   margin-left:auto;
   margin-right:auto;
   box-sizing:border-box;
+  zoom:var(--mobile-landscape-scale);
+}
+html.mobile-landscape h1{
+  margin:10px auto 8px;
+}
+html.mobile-landscape .topBar{
+  gap:6px;
 }
 html.mobile-landscape .topBar-row{
   width:100%;
@@ -998,16 +1008,36 @@ html.mobile-landscape .topBar-row input,
 html.mobile-landscape .topBar-row select,
 html.mobile-landscape .topBar-row button{
   flex:0 1 auto;
+  margin:0;
+  padding:8px 10px;
+  font-size:14px;
 }
 html.mobile-landscape #studentName,
 html.mobile-landscape #className,
 html.mobile-landscape #schoolName{
-  width:22%;
-  min-width:140px;
+  width:220px;
+  min-width:220px;
 }
 html.mobile-landscape #playMode{
   width:180px;
   min-width:180px;
+}
+html.mobile-landscape #infoBar{
+  white-space:nowrap;
+  overflow:hidden;
+  font-size:17px;
+}
+html.mobile-landscape #levelBar{
+  gap:8px;
+}
+html.mobile-landscape #levelBar .level-btn{
+  margin:0;
+  padding:8px 10px;
+  font-size:14px;
+}
+html.mobile-landscape .card-wrap{
+  width:170px;
+  height:64px;
 }
 html.mobile-landscape #gameBoard{
   grid-template-columns:repeat(4,170px);
@@ -1018,7 +1048,8 @@ html.mobile-landscape #gameBoard{
 html.mobile-landscape #formulaBox,
 html.mobile-landscape #finishBox,
 html.mobile-landscape #teacherPanel{
-  width:min(1120px,95vw);
+  width:1120px;
+  max-width:1120px;
 }
 html.mobile-landscape .rules-box{
   width:min(1100px,94vw);
@@ -5827,6 +5858,9 @@ initPasswordToggles();
 })();
 
 (function(){
+  const DESKTOP_LAYOUT_WIDTH=1180;
+  const DESKTOP_CONTENT_WIDTH=1120;
+
   function getViewportSize(){
     const vv=window.visualViewport;
     const width=Math.max(
@@ -5865,11 +5899,33 @@ initPasswordToggles();
 
   function applyMobileLandscapeMode(){
     const root=document.documentElement;
+    const body=document.body;
     const enabled=isTouchMobileLandscape();
+    const viewport=getViewportSize();
+
     root.classList.toggle('mobile-landscape', enabled);
-    document.body.classList.toggle('mobile-landscape', enabled);
+    body.classList.toggle('mobile-landscape', enabled);
+
+    if(enabled){
+      const fitWidth=Math.max(760, viewport.width - 8);
+      const fitHeight=Math.max(320, viewport.height - 8);
+      const widthScale=fitWidth / DESKTOP_LAYOUT_WIDTH;
+      const heightScale=fitHeight / 760;
+      const scale=Math.max(0.58, Math.min(1, widthScale, heightScale));
+      root.style.setProperty('--mobile-landscape-scale', String(scale));
+      body.style.minHeight=Math.round(fitHeight / scale) + 'px';
+      body.style.paddingBottom='18px';
+    }else{
+      root.style.setProperty('--mobile-landscape-scale','1');
+      body.style.minHeight='';
+      body.style.paddingBottom='';
+    }
+
     tryLockLandscape();
-    window.dispatchEvent(new Event('resize'));
+
+    if(typeof refreshMobileLandscapeLayout==='function'){
+      try{ refreshMobileLandscapeLayout(); }catch(err){}
+    }
   }
 
   function updateMobileLandscapeMode(){
@@ -5883,6 +5939,51 @@ initPasswordToggles();
     setTimeout(applyMobileLandscapeMode, 420);
   }
 
+  window.refreshMobileLandscapeLayout=function(){
+    const enabled=document.documentElement.classList.contains('mobile-landscape');
+    const viewport=getViewportSize();
+    const gameBoard=document.getElementById('gameBoard');
+    const formulaBox=document.getElementById('formulaBox');
+    const finishBox=document.getElementById('finishBox');
+    const teacherPanel=document.getElementById('teacherPanel');
+
+    if(gameBoard){
+      if(enabled){
+        const cols=4;
+        const cardWidth=Math.max(128, Math.min(170, Math.floor((viewport.width - 90) / cols)));
+        gameBoard.style.gridTemplateColumns=`repeat(${cols}, ${cardWidth}px)`;
+        gameBoard.style.gap=(cardWidth >= 160 ? 18 : cardWidth >= 145 ? 14 : 10) + 'px';
+        document.querySelectorAll('.card-wrap').forEach(card=>{
+          card.style.width=cardWidth + 'px';
+          card.style.height='64px';
+        });
+      }else{
+        gameBoard.style.gridTemplateColumns='';
+        gameBoard.style.gap='';
+        document.querySelectorAll('.card-wrap').forEach(card=>{
+          card.style.width='';
+          card.style.height='';
+        });
+      }
+    }
+
+    if(formulaBox){
+      formulaBox.style.whiteSpace=enabled ? 'normal' : '';
+    }
+    if(finishBox && enabled){
+      finishBox.style.maxWidth=DESKTOP_CONTENT_WIDTH + 'px';
+    }else if(finishBox){
+      finishBox.style.maxWidth='';
+    }
+    if(teacherPanel && enabled){
+      teacherPanel.style.maxWidth=DESKTOP_CONTENT_WIDTH + 'px';
+    }else if(teacherPanel){
+      teacherPanel.style.maxWidth='';
+    }
+
+    window.dispatchEvent(new Event('resize'));
+  };
+
   ['pointerdown','touchstart','click'].forEach(evt=>{
     document.addEventListener(evt, ()=>{
       if(isTouchMobileLandscape()) updateMobileLandscapeMode();
@@ -5890,7 +5991,11 @@ initPasswordToggles();
   });
 
   window.addEventListener('resize', updateMobileLandscapeMode, {passive:true});
-  window.addEventListener('orientationchange', updateMobileLandscapeMode, {passive:true});
+  window.addEventListener('orientationchange', ()=>{
+    updateMobileLandscapeMode();
+    setTimeout(updateMobileLandscapeMode, 120);
+    setTimeout(updateMobileLandscapeMode, 260);
+  }, {passive:true});
 
   if(screen && screen.orientation && typeof screen.orientation.addEventListener==='function'){
     screen.orientation.addEventListener('change', updateMobileLandscapeMode, {passive:true});
