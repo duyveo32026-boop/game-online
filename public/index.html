@@ -1482,22 +1482,34 @@ function getHintAudioFileByText(text){
 }
 
 function getHintDisplayTextByText(text){
-  const fileName=getHintAudioFileByText(text);
-  if(fileName==='hint1.mp3'){
-    return '💡 Gợi ý: Hãy chú ý dấu cộng và dấu trừ trong biểu thức.';
-  }
-  if(fileName==='hint2.mp3'){
-    return '💡 Gợi ý: Em hãy xem lại số mũ và hệ số của hạng tử giữa.';
-  }
-  return '💡 Gợi ý: Hãy đối chiếu với công thức hằng đẳng thức đã học.';
+  const normalized=String(text||'').replace(/\s+/g,' ').trim();
+  if(!normalized) return '💡 Gợi ý: Hãy đối chiếu với công thức hằng đẳng thức đã học.';
+  return /^💡\s*Gợi ý\s*:/i.test(normalized) ? normalized : `💡 Gợi ý: ${normalized}`;
 }
 
 function buildNarrationQueueFromMp3(spokenText){
   const clean=String(spokenText||'').trim();
   if(!clean) return [];
 
-  if(clean==='Hết giờ rồi' || clean==='Hết giờ' || clean==='Bạn hết lượt ghép rồi' || clean==='Bạn đã ghép sai nhiều lần'){
-    return [{source:'local_mp3',url:buildLocalMp3Url('lose.mp3')}];
+  if(clean==='Hết giờ rồi' || clean==='Hết giờ'){
+    return [
+      {source:'local_mp3',url:buildLocalMp3Url('time_up.mp3')},
+      {source:'local_mp3',url:buildLocalMp3Url('lose.mp3')}
+    ];
+  }
+
+  if(clean==='Bạn hết lượt ghép rồi' || clean==='Bạn đã ghép sai nhiều lần'){
+    return [
+      {source:'local_mp3',url:buildLocalMp3Url('out_of_lives.mp3')},
+      {source:'local_mp3',url:buildLocalMp3Url('lose.mp3')}
+    ];
+  }
+
+  if(clean==='Kết nối mạng đã bị ngắt' || clean==='Hết mạng'){
+    return [
+      {source:'local_mp3',url:buildLocalMp3Url('network_lost.mp3')},
+      {source:'local_mp3',url:buildLocalMp3Url('lose.mp3')}
+    ];
   }
 
   if(clean.startsWith('Bạn đúng rồi.')){
@@ -1776,6 +1788,19 @@ function setupPasswordToggle(inputId){
   input.dataset.passwordToggleReady='1';
 }
 
+
+function handleNetworkLoss(){
+  if(!gameSessionActive) return;
+  clearInterval(timer);
+  clearAllCardTimers();
+  lockBoard=true;
+  setGameSessionActive(false);
+  saveAttempt(false,"Hết mạng");
+  showImmediateVoiceAlert("Mất kết nối mạng","Kết nối mạng đã bị ngắt");
+  renderFinishBox(false,"Hết mạng");
+}
+
+window.addEventListener('offline',handleNetworkLoss);
 function initPasswordToggles(){
   ['teacherPass','studentPass','oldStudentPass','newStudentPass','confirmStudentPass','newAccountPass'].forEach(setupPasswordToggle);
 }
@@ -1877,6 +1902,27 @@ function safePlay(audio){
     audio.currentTime=0;
     audio.play().catch(()=>{});
   }catch(e){}
+}
+
+function stopSoundEffect(audio){
+  if(!audio) return;
+  try{
+    audio.pause();
+    audio.currentTime=0;
+  }catch(err){}
+}
+
+function stopAllGameAudio(){
+  stopSoundEffect(clickSound);
+  stopSoundEffect(clapSound);
+  stopSoundEffect(wrongSound);
+  stopVoicePromptQueue();
+}
+
+function showImmediateVoiceAlert(statusText,voiceText){
+  stopAllGameAudio();
+  document.getElementById("formulaBox").innerText=String(statusText||'');
+  interruptAndSpeakVietnameseMale(voiceText || statusText || '');
 }
 
 function normalizeText(value){
@@ -2427,6 +2473,25 @@ function getStudentAttempts(name,className,schoolName){
     if(levelA!==levelB) return levelA-levelB;
     return (Number(b.playedAt)||0)-(Number(a.playedAt)||0);
   });
+}
+
+function hasCompletedAllSevenLevels(name,className,schoolName,pendingLevel){
+  const attempts=getStudentAttempts(name,className,schoolName);
+  const completedLevels=new Set();
+
+  attempts.forEach(item=>{
+    const level=Number(item && item.level)||0;
+    if(item && item.completed && level>=1 && level<=7){
+      completedLevels.add(level);
+    }
+  });
+
+  const extraLevel=Number(pendingLevel)||0;
+  if(extraLevel>=1 && extraLevel<=7){
+    completedLevels.add(extraLevel);
+  }
+
+  return completedLevels.size===7;
 }
 
 function getStudentLevelSummaries(name,className,schoolName){
@@ -3036,6 +3101,16 @@ function resetGameState(){
   updateInfoBar();
 }
 
+function refreshLiveStudentAndTeacherViews(){
+  if(teacherLoggedIn){
+    renderTeacherPanel();
+  }
+  toggleViewCommentButton();
+  if(currentStudentDetailOpen){
+    showStudentComment();
+  }
+}
+
 function saveAttempt(completed,statusText){
   if(attemptSaved) return lastSavedAttemptRecord;
   attemptSaved=true;
@@ -3073,15 +3148,13 @@ function saveAttempt(completed,statusText){
   data.push(attemptRecord);
   lastSavedAttemptRecord=attemptRecord;
   localStorage.setItem(STORAGE_RESULTS_KEY,JSON.stringify(data));
-  if(teacherLoggedIn){
-    renderTeacherPanel();
-  }
-  toggleViewCommentButton();
+  refreshLiveStudentAndTeacherViews();
   return attemptRecord;
 }
 
 function startGame(){
   unlockAudio();
+  stopAllGameAudio();
 
   const name=document.getElementById("studentName").value.trim();
   const className=document.getElementById("className").value.trim();
@@ -3122,6 +3195,7 @@ function startGame(){
         clearAllCardTimers();
         lockBoard=true;
         setGameSessionActive(false);
+        stopAllGameAudio();
         saveAttempt(false,"Hết giờ");
         document.getElementById("formulaBox").innerText="❌ Bạn đã hết thời gian.";
         showImmediateVoiceAlert("Hết giờ","Hết giờ rồi");
@@ -3249,6 +3323,7 @@ function finishLoseByLives(){
   clearAllCardTimers();
   lockBoard=true;
   setGameSessionActive(false);
+  stopAllGameAudio();
   saveAttempt(false,"Hết mạng");
   document.getElementById("formulaBox").innerText="💀 Bạn đã ghép sai nhiều lần.";
   showImmediateVoiceAlert("Bạn đã ghép sai nhiều lần","Bạn hết lượt ghép rồi");
@@ -3265,6 +3340,7 @@ function pauseGameByWrongLimit(limit){
 
 function handleCorrectMatch(a,b){
   stopVoicePromptQueue();
+  stopSoundEffect(clickSound);
   stopSoundEffect(wrongSound);
   safePlay(clapSound);
   clearCardTimer(a.el);
@@ -3656,9 +3732,19 @@ function checkFinish(){
 
     if(!celebrationDone){
       celebrationDone=true;
+      const completedAllLevels=hasCompletedAllSevenLevels(
+        document.getElementById("studentName").value.trim(),
+        document.getElementById("className").value.trim(),
+        document.getElementById("schoolName").value.trim(),
+        currentLevel
+      );
       stopAllGameAudio();
       launchCelebration();
-      interruptAndSpeakVietnameseMale(`Chúc mừng bạn đã hoàn thành cấp độ ${currentLevel}`);
+      interruptAndSpeakVietnameseMale(
+        completedAllLevels
+          ? 'Xuất sắc! Bạn đã hoàn thành toàn bộ trò chơi'
+          : `Chúc mừng bạn đã hoàn thành cấp độ ${currentLevel}`
+      );
     }
 
     saveAttempt(true,"Hoàn thành");
@@ -3809,22 +3895,37 @@ function teacherLogin(){
 }
 
 function openCommentModal(name,className,schoolName,level,attemptRecord){
+  if(!attemptRecord){
+    return;
+  }
+
   const infoHtml=[
     `<b>Học sinh:</b> ${escapeHtml(name||"")}`,
     `<b>Lớp:</b> ${escapeHtml(className||"")}`,
     `<b>Trường:</b> ${escapeHtml(schoolName||"")}`,
-    `<b>Cấp độ:</b> ${Number(level)||1}`
+    `<b>Cấp độ:</b> ${Number(level)||1}`,
+    `<b>Ngày giờ hoàn thành:</b> ${formatDateTime(attemptRecord.completedAt||attemptRecord.playedAt)}`
   ];
-  if(attemptRecord){
-    infoHtml.push(`<b>Ngày giờ hoàn thành:</b> ${formatDateTime(attemptRecord.completedAt||attemptRecord.playedAt)}`);
-  }
 
   document.getElementById("commentStudentInfo").innerHTML=infoHtml.join("<br>");
-  const perAttemptComment=attemptRecord ? findAttemptComment(attemptRecord) : "";
-  const levelComment=findStudentComment(name,className,schoolName,level);
-  document.getElementById("teacherCommentText").value=perAttemptComment || levelComment || "";
+  document.getElementById("teacherCommentText").value=attemptRecord ? findAttemptComment(attemptRecord) : "";
   window.activeCommentTarget={name,className,schoolName,level,attemptRecord:attemptRecord||null};
   document.getElementById("commentModal").classList.add("show");
+}
+
+function openCommentModalByIndex(index){
+  const cache=Array.isArray(window.teacherResultDataCache) ? window.teacherResultDataCache : [];
+  const raw=cache[Number(index)];
+  if(!raw){
+    const stored=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY)||"[]");
+    const normalized=stored.map(item=>normalizeStoredAttempt(item));
+    window.teacherResultDataCache=normalized;
+    const fallback=normalized[Number(index)];
+    if(!fallback) return;
+    openCommentModal(fallback.name||"",fallback.className||"",fallback.schoolName||"",Number(fallback.level)||1,fallback);
+    return;
+  }
+  openCommentModal(raw.name||"",raw.className||"",raw.schoolName||"",Number(raw.level)||1,raw);
 }
 
 function closeCommentModal(){
@@ -3835,41 +3936,22 @@ function closeCommentModal(){
 function saveTeacherComment(){
   const textValue=document.getElementById("teacherCommentText").value.trim();
   const info=(window.activeCommentTarget||{});
-  if(!info.name || !info.className || !info.schoolName){
+  if(!info.name || !info.className || !info.schoolName || !info.attemptRecord){
     closeCommentModal();
     return;
   }
 
-  const comments=getCommentStore();
-  if(info.level!==undefined && info.level!==null && info.level!==""){
-    comments[makeStudentLevelKey(info.name,info.className,info.schoolName,info.level)]=textValue;
-  }else{
-    comments[makeStudentKey(info.name,info.className,info.schoolName)]=textValue;
-  }
-
-  if(info.attemptRecord){
-    const attemptKey=makeAttemptCommentKey(info.attemptRecord);
-    comments[attemptKey]=textValue;
-    setAttemptComment(info.attemptRecord,textValue);
-  }
-
-  localStorage.setItem(STORAGE_COMMENTS_KEY,JSON.stringify(comments));
+  setAttemptComment(info.attemptRecord,textValue);
 
   closeCommentModal();
-  if(teacherLoggedIn){
-    renderTeacherPanel();
-  }
-  if(currentStudentDetailOpen){
-    showStudentComment();
-  }else{
-    toggleViewCommentButton();
-  }
+  refreshLiveStudentAndTeacherViews();
   alert("Đã lưu nhận xét cho học sinh.");
 }
 
 function renderTeacherPanel(){
   const data=JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[];
   const normalizedData=data.map(item=>normalizeStoredAttempt(item));
+  window.teacherResultDataCache=normalizedData;
   const resultList=document.getElementById("resultList");
 
   if(normalizedData.length===0){
@@ -3882,7 +3964,7 @@ function renderTeacherPanel(){
   }
 
   resultList.innerHTML=normalizedData.map((r,index)=>{
-    const hasComment=!!findStudentComment(r.name,r.className,r.schoolName,r.level);
+    const hasComment=!!findAttemptComment(r);
     const rankInfo=getAttemptRankingInfo(r);
     return `
       <div class="result-item">
@@ -3906,7 +3988,7 @@ function renderTeacherPanel(){
         </div>
         <div class="result-actions">
           <button class="lesson-btn" onclick="openLessonModal(${index})">Xem bài học sinh</button>
-          <button class="comment-btn" onclick="openCommentModal(${index})">Nhận xét</button>
+          <button class="comment-btn" onclick="openCommentModalByIndex(${index})">Nhận xét</button>
           <button class="delete-btn" onclick="deleteResult(${index})">Xóa</button>
         </div>
       </div>
