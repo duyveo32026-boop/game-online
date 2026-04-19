@@ -2495,6 +2495,7 @@ function renderAccountManager(){
     </div>
     <div class="account-bulk-bar">
       <div class="account-actions-row" style="margin-top:0;">
+        <button onclick="downloadAllStudentAccountsExcel()" style="background:#0ea5e9;color:#fff;">Tải danh sách người dùng</button>
         <button onclick="toggleSelectAllStudentAccounts()">${allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}</button>
         <button class="delete-btn" onclick="deleteSelectedStudentAccounts()">Xóa tất cả</button>
       </div>
@@ -5436,6 +5437,51 @@ function downloadLatestImportedStudentAccounts(){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,sheet,'Danh sach hoc sinh');
   XLSX.writeFile(wb,'danh_sach_hoc_sinh.xlsx',{bookType:'xlsx'});
+}
+
+function downloadAllStudentAccountsExcel(){
+  if(typeof XLSX==='undefined'){
+    alert('Thiếu thư viện XLSX để tải danh sách người dùng.');
+    return;
+  }
+  const accounts=getStudentAccounts().sort((a,b)=>String(a.className||'').localeCompare(String(b.className||''),'vi',{sensitivity:'base'}) || String(a.name||'').localeCompare(String(b.name||''),'vi',{sensitivity:'base'}));
+  if(!accounts.length){
+    alert('Chưa có dữ liệu người dùng để tải xuống.');
+    return;
+  }
+  const sortedAccounts=[...accounts].sort((a,b)=>{
+    const nameA=String(a.name||'').trim();
+    const nameB=String(b.name||'').trim();
+    const partsA=nameA.split(/\s+/).filter(Boolean);
+    const partsB=nameB.split(/\s+/).filter(Boolean);
+    const givenA=partsA.length ? partsA[partsA.length-1] : '';
+    const givenB=partsB.length ? partsB[partsB.length-1] : '';
+    const byGiven=givenA.localeCompare(givenB,'vi',{sensitivity:'base'});
+    if(byGiven!==0) return byGiven;
+    return nameA.localeCompare(nameB,'vi',{sensitivity:'base'});
+  });
+  const rows=[
+    ['STT','Họ tên học sinh','Lớp','Trường','Tài khoản','Mật khẩu','Cập nhật'],
+    ...sortedAccounts.map((item,index)=>[
+      String(index+1),
+      String(item.name||''),
+      String(item.className||''),
+      String(item.schoolName||''),
+      String(item.username||''),
+      String(item.password||''),
+      String(formatDateTime(item.updatedAt||item.createdAt)||'')
+    ])
+  ];
+  const sheet=XLSX.utils.aoa_to_sheet(rows);
+  Object.keys(sheet).forEach(key=>{
+    if(key[0]==='!') return;
+    sheet[key].t='s';
+    sheet[key].z='@';
+  });
+  sheet['!cols']=[{wch:8},{wch:30},{wch:12},{wch:30},{wch:22},{wch:18},{wch:22}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,sheet,'Danh sach nguoi dung');
+  XLSX.writeFile(wb,'danh_sach_nguoi_dung.xlsx',{bookType:'xlsx'});
 }
 
 function generateStudentUsername(name,className,accounts){
