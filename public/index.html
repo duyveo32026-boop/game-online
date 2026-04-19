@@ -961,33 +961,36 @@ html.mobile-landscape body{
   width:100%;
   min-height:100%;
 }
-@media screen and (max-width:1024px) and (orientation:landscape){
+@media screen and (max-width:1180px) and (orientation:landscape){
   html.mobile-landscape{
     height:100%;
   }
   html.mobile-landscape body{
     overflow-x:auto;
+    overflow-y:auto;
     -webkit-text-size-adjust:100%;
     min-width:100vw;
+    min-height:100vh;
+    min-height:100dvh;
   }
   html.mobile-landscape #gameBoard{
-    grid-template-columns:repeat(4,minmax(140px,170px));
+    grid-template-columns:repeat(4,minmax(150px,170px));
     gap:14px;
     padding:10px;
     width:min(100%,860px);
+    margin:18px auto 10px;
   }
   html.mobile-landscape .topBar-row,
   html.mobile-landscape #levelBar,
-  html.mobile-landscape #bottomActionRow{
+  html.mobile-landscape #bottomActionRow,
+  html.mobile-landscape #infoBar{
     padding-left:8px;
     padding-right:8px;
   }
-}
-@supports (height: 100dvh){
-  @media screen and (max-width:1024px) and (orientation:landscape){
-    html.mobile-landscape body{
-      min-height:100dvh;
-    }
+  html.mobile-landscape #teacherPanel,
+  html.mobile-landscape #finishBox,
+  html.mobile-landscape #formulaBox{
+    width:min(95vw,1120px);
   }
 }
 </style>
@@ -5792,24 +5795,29 @@ initPasswordToggles();
 
 (function(){
   function isTouchMobileLandscape(){
+    const root=document.documentElement;
     const isTouchDevice=('ontouchstart' in window) || (navigator.maxTouchPoints>0) || (navigator.msMaxTouchPoints>0);
-    const isLandscape=window.matchMedia('(orientation: landscape)').matches;
-    const isMobileViewport=Math.max(window.innerWidth||0, window.innerHeight||0)<=1024;
-    return !!(isTouchDevice && isMobileViewport && isLandscape);
+    const viewW=Math.max(window.innerWidth||0, document.documentElement.clientWidth||0);
+    const viewH=Math.max(window.innerHeight||0, document.documentElement.clientHeight||0);
+    const shortestSide=Math.min(viewW, viewH);
+    const isMobileViewport=shortestSide<=820;
+    const isLandscape=window.matchMedia('(orientation: landscape)').matches || viewW>viewH;
+    return !!(root && isTouchDevice && isMobileViewport && isLandscape);
   }
 
   function tryLockLandscape(){
     if(!isTouchMobileLandscape()) return;
-    const orientationApi=screen && screen.orientation;
+    const orientationApi=(screen && screen.orientation) ? screen.orientation : null;
     if(!orientationApi || typeof orientationApi.lock!=='function') return;
     try{
-      const result=orientationApi.lock('landscape');
-      if(result && typeof result.catch==='function') result.catch(()=>{});
+      const locked=orientationApi.lock('landscape');
+      if(locked && typeof locked.catch==='function') locked.catch(()=>{});
     }catch(err){}
   }
 
   function updateMobileLandscapeMode(){
     const root=document.documentElement;
+    if(!root) return;
     root.classList.toggle('mobile-landscape', isTouchMobileLandscape());
     tryLockLandscape();
     setTimeout(()=>{
@@ -5817,7 +5825,7 @@ initPasswordToggles();
     },120);
   }
 
-  ['click','touchstart','pointerdown'].forEach(evt=>{
+  ['pointerdown','touchstart','click'].forEach(evt=>{
     document.addEventListener(evt, ()=>{
       if(isTouchMobileLandscape()) tryLockLandscape();
     }, {passive:true, capture:true});
