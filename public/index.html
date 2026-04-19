@@ -1879,6 +1879,8 @@ let teacherLoggedIn=false;
 let selectedStudentAccountKeys=[];
 
 let activeCommentKey="";
+  activeCommentRecord=null;
+let activeCommentRecord=null;
 let latestImportedStudentAccountKeys=[];
 let latestImportedStudentSourceFileName="";
 let currentLevel3Pairs=[];
@@ -1948,6 +1950,46 @@ function makeAttemptSyncKey(item){
     Number(safeItem.level)||1,
     Number(safeItem.playedAt)||0
   ].join("|");
+}
+
+function buildAttemptCommentLookupKeys(item){
+  const safeItem=item||{};
+  const keys=[];
+  const normalized=normalizeStoredAttempt(safeItem);
+  const directPlayedAt=Number(normalized.playedAt||0);
+  const safeUser=normalizeText(normalized.username||"");
+  const studentKey=makeStudentKey(normalized.name||"",normalized.className||"",normalized.schoolName||"");
+  const level=Number(normalized.level)||1;
+  const timeValue=Number(normalized.timeSpent||normalized.time||0);
+  const rankValue=String(normalized.rankText||normalized.rank||"").trim();
+  const scoreValue=Number(normalized.score||0);
+  const pairValue=Number(normalized.correctPairs||normalized.correctCount||0);
+
+  [
+    [safeUser,studentKey,level,directPlayedAt],
+    [safeUser,studentKey,level,timeValue,scoreValue,pairValue,rankValue],
+    [studentKey,level,directPlayedAt],
+    [studentKey,level,timeValue,scoreValue,pairValue,rankValue]
+  ].forEach(parts=>{
+    const key=parts.map(v=>String(v)).join("|");
+    if(key && !keys.includes(key)) keys.push(key);
+  });
+  return keys;
+}
+function getAttemptCommentByRecord(item){
+  const store=getAttemptCommentStore();
+  const keys=buildAttemptCommentLookupKeys(item);
+  for(const key of keys){
+    if(store[key]) return store[key];
+  }
+  return "";
+}
+function setAttemptCommentForRecord(store,item,commentText){
+  const keys=buildAttemptCommentLookupKeys(item);
+  keys.forEach(key=>{
+    store[key]=commentText;
+  });
+  return store;
 }
 function mergeAttemptLists(preferredList,baseList){
   const mergedMap=new Map();
@@ -4188,6 +4230,7 @@ function openCommentModalByIndex(index){
 function closeCommentModal(){
   document.getElementById("commentModal").classList.remove("show");
   activeCommentKey="";
+  activeCommentRecord=null;
 }
 
 async function saveTeacherComment(){
