@@ -5829,13 +5829,31 @@ initPasswordToggles();
 })();
 
 (function(){
+  const DESKTOP_LANDSCAPE_WIDTH=1180;
+
+  function getViewportSize(){
+    const vv=window.visualViewport;
+    const width=Math.max(
+      Math.round(vv && vv.width ? vv.width : 0),
+      Math.round(window.innerWidth || 0),
+      Math.round(document.documentElement.clientWidth || 0)
+    );
+    const height=Math.max(
+      Math.round(vv && vv.height ? vv.height : 0),
+      Math.round(window.innerHeight || 0),
+      Math.round(document.documentElement.clientHeight || 0)
+    );
+    return { width, height };
+  }
+
   function isTouchMobileLandscape(){
     const isTouchDevice=('ontouchstart' in window) || (navigator.maxTouchPoints>0) || (navigator.msMaxTouchPoints>0);
-    const viewW=Math.max(window.innerWidth||0, document.documentElement.clientWidth||0);
-    const viewH=Math.max(window.innerHeight||0, document.documentElement.clientHeight||0);
-    const shortestSide=Math.min(viewW, viewH);
-    const isMobileViewport=shortestSide<=820;
-    const isLandscape=window.matchMedia('(orientation: landscape)').matches || viewW>viewH;
+    const viewport=getViewportSize();
+    const shortestSide=Math.min(viewport.width, viewport.height);
+    const orientationType=(screen && screen.orientation && screen.orientation.type) ? String(screen.orientation.type) : '';
+    const legacyAngle=Math.abs(Number(window.orientation || 0));
+    const isLandscape=orientationType.includes('landscape') || window.matchMedia('(orientation: landscape)').matches || viewport.width>viewport.height || legacyAngle===90;
+    const isMobileViewport=shortestSide<=900;
     return !!(isTouchDevice && isMobileViewport && isLandscape);
   }
 
@@ -5849,29 +5867,59 @@ initPasswordToggles();
     }catch(err){}
   }
 
-  function updateMobileLandscapeMode(){
+  function applyMobileLandscapeViewport(){
     const root=document.documentElement;
-    root.classList.toggle('mobile-landscape', isTouchMobileLandscape());
+    const body=document.body;
+    const viewport=getViewportSize();
+    const enabled=isTouchMobileLandscape();
+
+    root.classList.toggle('mobile-landscape', enabled);
+    body.classList.toggle('mobile-landscape', enabled);
+
+    if(enabled){
+      const availableWidth=Math.max(viewport.width, viewport.height);
+      body.style.minWidth=Math.min(DESKTOP_LANDSCAPE_WIDTH, availableWidth) + 'px';
+      body.style.width='100%';
+    }else{
+      body.style.minWidth='';
+      body.style.width='';
+    }
+
     tryLockLandscape();
-    setTimeout(()=>{
-      root.classList.toggle('mobile-landscape', isTouchMobileLandscape());
-    },120);
+    window.dispatchEvent(new Event('resize'));
+  }
+
+  function updateMobileLandscapeMode(){
+    applyMobileLandscapeViewport();
+    requestAnimationFrame(()=>{
+      applyMobileLandscapeViewport();
+      requestAnimationFrame(applyMobileLandscapeViewport);
+    });
+    setTimeout(applyMobileLandscapeViewport, 120);
+    setTimeout(applyMobileLandscapeViewport, 260);
   }
 
   ['pointerdown','touchstart','click'].forEach(evt=>{
     document.addEventListener(evt, ()=>{
-      if(isTouchMobileLandscape()) tryLockLandscape();
+      if(isTouchMobileLandscape()) updateMobileLandscapeMode();
     }, {passive:true, capture:true});
   });
 
   window.addEventListener('resize', updateMobileLandscapeMode, {passive:true});
   window.addEventListener('orientationchange', ()=>{
-    setTimeout(updateMobileLandscapeMode, 60);
+    updateMobileLandscapeMode();
+    setTimeout(updateMobileLandscapeMode, 80);
     setTimeout(updateMobileLandscapeMode, 220);
+    setTimeout(updateMobileLandscapeMode, 420);
   }, {passive:true});
+
+  if(screen && screen.orientation && typeof screen.orientation.addEventListener==='function'){
+    screen.orientation.addEventListener('change', updateMobileLandscapeMode, {passive:true});
+  }
 
   if(window.visualViewport){
     window.visualViewport.addEventListener('resize', updateMobileLandscapeMode, {passive:true});
+    window.visualViewport.addEventListener('scroll', updateMobileLandscapeMode, {passive:true});
   }
 
   if(document.readyState==='loading'){
@@ -5879,6 +5927,8 @@ initPasswordToggles();
   }else{
     updateMobileLandscapeMode();
   }
+
+  window.addEventListener('load', updateMobileLandscapeMode, {once:true});
 })();
 </script>
 </body>
