@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Ôn tập hằng đẳng thức đáng nhớ</title>
 <style>
 body{
@@ -954,6 +955,29 @@ canvas{
   padding:12px;
 }
 
+
+html.mobile-landscape,
+html.mobile-landscape body{
+  width:100%;
+  min-height:100%;
+}
+@media screen and (max-width:1024px) and (orientation:landscape){
+  html.mobile-landscape body{
+    overflow-x:auto;
+    -webkit-text-size-adjust:100%;
+  }
+  html.mobile-landscape #gameBoard{
+    grid-template-columns:repeat(4,minmax(150px,170px));
+    gap:14px;
+    padding:10px;
+  }
+  html.mobile-landscape .topBar-row,
+  html.mobile-landscape #levelBar,
+  html.mobile-landscape #bottomActionRow{
+    padding-left:8px;
+    padding-right:8px;
+  }
+}
 </style>
 </head>
 <body>
@@ -5751,6 +5775,25 @@ initPasswordToggles();
     document.addEventListener('DOMContentLoaded',initSharedStudentAccountSync,{once:true});
   }else{
     initSharedStudentAccountSync();
+  }
+})();
+
+(function(){
+  function updateMobileLandscapeMode(){
+    const root=document.documentElement;
+    const isTouchDevice=('ontouchstart' in window) || (navigator.maxTouchPoints>0) || (navigator.msMaxTouchPoints>0);
+    const isLandscape=window.matchMedia('(orientation: landscape)').matches;
+    const isMobileViewport=Math.max(window.innerWidth||0, window.innerHeight||0)<=1024;
+    root.classList.toggle('mobile-landscape', !!(isTouchDevice && isMobileViewport && isLandscape));
+  }
+
+  window.addEventListener('resize', updateMobileLandscapeMode, {passive:true});
+  window.addEventListener('orientationchange', updateMobileLandscapeMode, {passive:true});
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', updateMobileLandscapeMode, {once:true});
+  }else{
+    updateMobileLandscapeMode();
   }
 })();
 </script>
