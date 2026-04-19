@@ -1993,23 +1993,69 @@ let sharedStudentAccountsReady=false;
 let sharedStudentAccountsSyncStarted=false;
 let sharedStudentAccountsWriting=false;
 let sharedStudentAccountsDbRef=null;
+let sharedStudentAccountsReadyResolver=null;
+let sharedStudentAccountsReadyPromise=new Promise(resolve=>{
+  sharedStudentAccountsReadyResolver=resolve;
+});
+let sharedStudentAccountsWritePromise=Promise.resolve();
+
+function markSharedStudentAccountsReady(){
+  sharedStudentAccountsReady=true;
+  if(sharedStudentAccountsReadyResolver){
+    sharedStudentAccountsReadyResolver(true);
+    sharedStudentAccountsReadyResolver=null;
+  }
+}
 
 function getStudentAccounts(){
   if(Array.isArray(sharedStudentAccountsCache)) return sharedStudentAccountsCache.slice();
   return JSON.parse(localStorage.getItem(STORAGE_STUDENT_KEY)||"[]");
 }
 
+function ensureSharedStudentAccountSyncStarted(){
+  try{
+    if(typeof initSharedStudentAccountSync==='function'){
+      initSharedStudentAccountSync();
+    }
+  }catch(err){}
+}
+
+async function waitForStudentAccountsSync(options={}){
+  const timeoutMs=Math.max(1000,Number(options.timeoutMs)||8000);
+  if(sharedStudentAccountsReady) return true;
+  ensureSharedStudentAccountSyncStarted();
+  let timeoutId=null;
+  try{
+    await Promise.race([
+      sharedStudentAccountsReadyPromise,
+      new Promise(resolve=>{
+        timeoutId=setTimeout(()=>resolve(false),timeoutMs);
+      })
+    ]);
+  }catch(err){}
+  if(timeoutId) clearTimeout(timeoutId);
+  return sharedStudentAccountsReady;
+}
+
 function setStudentAccounts(data){
   const safeData=Array.isArray(data) ? data.slice() : [];
   sharedStudentAccountsCache=safeData.slice();
-  sharedStudentAccountsReady=true;
+  markSharedStudentAccountsReady();
   localStorage.setItem(STORAGE_STUDENT_KEY,JSON.stringify(safeData));
-  if(sharedStudentAccountsDbRef && !sharedStudentAccountsWriting){
+  if(sharedStudentAccountsDbRef){
     sharedStudentAccountsWriting=true;
-    sharedStudentAccountsDbRef.set(safeData)
-      .catch(err=>console.error('Lỗi Firebase SET:',err))
-      .finally(()=>{ sharedStudentAccountsWriting=false; });
+    sharedStudentAccountsWritePromise=sharedStudentAccountsDbRef.set(safeData)
+      .catch(err=>{
+        console.error('Lỗi Firebase SET:',err);
+        throw err;
+      })
+      .finally(()=>{
+        sharedStudentAccountsWriting=false;
+      });
+    return sharedStudentAccountsWritePromise;
   }
+  sharedStudentAccountsWritePromise=Promise.resolve();
+  return sharedStudentAccountsWritePromise;
 }
 function getStudentAccountIdentity(account){
   return [normalizeLookupText(account && account.name), normalizeClassLookup(account && account.className), normalizeSchoolLookup(account && account.schoolName), normalizeText(account && account.username)].join('|');
@@ -4235,9 +4281,16 @@ function closeStudentLogin(){
   document.getElementById('studentLoginModal').classList.remove('show');
 }
 
-function studentLogin(){
+async function studentLogin(){
   const username=document.getElementById('studentUser').value.trim();
   const password=document.getElementById('studentPass').value.trim();
+  document.getElementById('studentLoginError').innerText='';
+  if(!username || !password){
+    document.getElementById('studentLoginError').innerText='Vui lòng nhập tài khoản và mật khẩu học sinh.';
+    return;
+  }
+  document.getElementById('studentLoginError').innerText='Đang đồng bộ tài khoản...';
+  await waitForStudentAccountsSync();
   const account=getStudentAccounts().find(item=>String(item.username||'').trim()===username && String(item.password||'').trim()===password);
   if(!account){
     document.getElementById('studentLoginError').innerText='Sai tài khoản hoặc mật khẩu học sinh.';
@@ -4272,10 +4325,12 @@ function closeForgotPasswordModal(){
   document.getElementById('forgotPasswordModal').classList.remove('show');
 }
 
-function recoverStudentAccount(){
+async function recoverStudentAccount(){
   const name=document.getElementById('forgotName').value.trim();
   const className=document.getElementById('forgotClass').value.trim();
   const schoolName=document.getElementById('forgotSchool').value.trim();
+  document.getElementById('forgotResult').innerHTML='Đang đồng bộ tài khoản...';
+  await waitForStudentAccountsSync();
   const account=getStudentAccounts().find(item=>isSameStudentRecord(item,name,className,schoolName));
   document.getElementById('forgotResult').innerHTML=account
     ? `<b>Tài khoản:</b> ${escapeHtml(account.username||'')}<br><b>Mật khẩu hiện tại:</b> ${escapeHtml(account.password||'')}<br><b>Cập nhật gần nhất:</b> ${formatDateTime(account.updatedAt||account.createdAt)}`
@@ -4298,11 +4353,20 @@ function closeChangePasswordModal(){
   document.getElementById('changePasswordModal').classList.remove('show');
 }
 
-function changeStudentPassword(){
+async function changeStudentPassword(){
   if(!currentStudentAccount) return;
   const oldPass=document.getElementById('oldStudentPass').value.trim();
   const newPass=document.getElementById('newStudentPass').value.trim();
   const confirmPass=document.getElementById('confirmStudentPass').value.trim();
+  document.getElementById('changePassResult').innerHTML='Đang đồng bộ tài khoản...';
+  await waitForStudentAccountsSync();
+  const accounts=getStudentAccounts();
+  const index=accounts.findIndex(item=>String(item.username||'').trim()===String(currentStudentAccount.username||'').trim());
+  if(index===-1){
+    document.getElementById('changePassResult').innerHTML='Không tìm thấy tài khoản học sinh.';
+    return;
+  }
+  currentStudentAccount=accounts[index];
   if(oldPass!==String(currentStudentAccount.password||'')){
     document.getElementById('changePassResult').innerHTML='Mật khẩu hiện tại chưa đúng.';
     return;
@@ -4315,12 +4379,9 @@ function changeStudentPassword(){
     document.getElementById('changePassResult').innerHTML='Hai lần nhập mật khẩu mới chưa khớp.';
     return;
   }
-  const accounts=getStudentAccounts();
-  const index=accounts.findIndex(item=>String(item.username||'').trim()===String(currentStudentAccount.username||'').trim());
-  if(index===-1) return;
   accounts[index].password=newPass;
   accounts[index].updatedAt=Date.now();
-  setStudentAccounts(accounts);
+  await setStudentAccounts(accounts);
   currentStudentAccount=accounts[index];
   document.getElementById('changePassResult').innerHTML='Đổi mật khẩu thành công.';
   renderTeacherPanel();
@@ -4372,7 +4433,8 @@ function buildStudentAccountPayload(form, existing){
   });
 }
 
-function upsertStudentAccount(form){
+async function upsertStudentAccount(form){
+  await waitForStudentAccountsSync();
   const accounts=getStudentAccounts();
   const existingIndex=accounts.findIndex(item=>String(item.username||'').trim()===String(form.username||'').trim() || isSameStudentRecord(item,form.name,form.className,form.schoolName));
   const payload=buildStudentAccountPayload(form, existingIndex>=0 ? accounts[existingIndex] : null);
@@ -4381,7 +4443,7 @@ function upsertStudentAccount(form){
   }else{
     accounts.push(payload);
   }
-  setStudentAccounts(accounts);
+  await setStudentAccounts(accounts);
   return payload;
 }
 
@@ -4397,7 +4459,7 @@ function closeCreateStudentAccountModal(){
   document.getElementById('createStudentAccountModal').classList.remove('show');
 }
 
-function createOwnStudentAccount(){
+async function createOwnStudentAccount(){
   const form={
     name:document.getElementById('createAccountName').value.trim(),
     className:document.getElementById('createAccountClass').value.trim(),
@@ -4409,12 +4471,14 @@ function createOwnStudentAccount(){
     document.getElementById('createAccountResult').innerHTML='Vui lòng nhập đầy đủ Họ tên, Lớp, Trường.';
     return;
   }
+  document.getElementById('createAccountResult').innerHTML='Đang đồng bộ tài khoản...';
+  await waitForStudentAccountsSync();
   const existing=getStudentAccounts().find(item=>isSameStudentRecord(item,form.name,form.className,form.schoolName));
   if(existing){
     document.getElementById('createAccountResult').innerHTML=`Học sinh này đã có tài khoản.<br><b>Tài khoản:</b> ${escapeHtml(existing.username||'')}<br><b>Mật khẩu:</b> ${escapeHtml(existing.password||'')}`;
     return;
   }
-  const account=upsertStudentAccount(form);
+  const account=await upsertStudentAccount(form);
   document.getElementById('createAccountResult').innerHTML=`Tạo tài khoản thành công.<br><b>Tài khoản:</b> ${escapeHtml(account.username||'')}<br><b>Mật khẩu:</b> ${escapeHtml(account.password||'')}`;
   renderTeacherPanel();
 }
@@ -4461,23 +4525,24 @@ function importStudentAccountsFromFile(){
   reader.readAsText(file,'utf-8');
 }
 
-function createStudentAccount(){
+async function createStudentAccount(){
   const form=getAccountFormData();
   if(!form.name || !form.className || !form.schoolName || !form.username || !form.password){
     alert('Vui lòng nhập đầy đủ thông tin để cấp tài khoản học sinh.');
     return;
   }
-  upsertStudentAccount(form);
+  await upsertStudentAccount(form);
   renderTeacherPanel();
   alert('Đã cấp / cập nhật tài khoản học sinh.');
 }
 
-function resetStudentAccountPassword(){
+async function resetStudentAccountPassword(){
   const form=getAccountFormData();
   if(!form.username || !form.password){
     alert('Nhập tài khoản và mật khẩu mới để cấp lại.');
     return;
   }
+  await waitForStudentAccountsSync();
   const accounts=getStudentAccounts();
   const index=accounts.findIndex(item=>String(item.username||'').trim()===form.username || isSameStudentRecord(item,form.name,form.className,form.schoolName));
   if(index===-1){
@@ -4489,13 +4554,14 @@ function resetStudentAccountPassword(){
   if(form.name) accounts[index].name=form.name;
   if(form.className) accounts[index].className=form.className;
   if(form.schoolName) accounts[index].schoolName=form.schoolName;
-  setStudentAccounts(accounts);
+  await setStudentAccounts(accounts);
   renderTeacherPanel();
   alert('Đã cấp lại mật khẩu học sinh.');
 }
 
-function deleteStudentAccount(){
+async function deleteStudentAccount(){
   const form=getAccountFormData();
+  await waitForStudentAccountsSync();
   const accounts=getStudentAccounts();
   const index=accounts.findIndex(item=>String(item.username||'').trim()===form.username || isSameStudentRecord(item,form.name,form.className,form.schoolName));
   if(index===-1){
@@ -4504,19 +4570,20 @@ function deleteStudentAccount(){
   }
   if(confirm('Bạn có chắc muốn xóa tài khoản học sinh này không?')){
     accounts.splice(index,1);
-    setStudentAccounts(accounts);
+    await setStudentAccounts(accounts);
     renderTeacherPanel();
     alert('Đã xóa tài khoản học sinh.');
   }
 }
 
 
-function resetStudentAccountUsername(){
+async function resetStudentAccountUsername(){
   const form=getAccountFormData();
   if(!form.username){
     alert('Nhập tài khoản mới để cấp lại tài khoản.');
     return;
   }
+  await waitForStudentAccountsSync();
   const accounts=getStudentAccounts();
   const index=accounts.findIndex(item=>isSameStudentRecord(item,form.name,form.className,form.schoolName) || String(item.username||'').trim()===String(form.username||'').trim());
   if(index===-1){
@@ -4533,7 +4600,7 @@ function resetStudentAccountUsername(){
   if(form.className) accounts[index].className=form.className;
   if(form.schoolName) accounts[index].schoolName=form.schoolName;
   accounts[index].updatedAt=Date.now();
-  setStudentAccounts(accounts);
+  await setStudentAccounts(accounts);
   renderTeacherPanel();
   alert('Đã cấp lại tài khoản học sinh.');
 }
@@ -5210,11 +5277,14 @@ initPasswordToggles();
     }
   }
 
-  function initSharedStudentAccountSync(){
+  window.initSharedStudentAccountSync=function initSharedStudentAccountSync(){
     try{
       if(sharedStudentAccountsSyncStarted) return;
       sharedStudentAccountsSyncStarted=true;
-      if(typeof firebase==='undefined' || !firebase.apps) return;
+      if(typeof firebase==='undefined' || !firebase.apps) {
+        markSharedStudentAccountsReady();
+        return;
+      }
       if(!firebase.apps.length){
         firebase.initializeApp(firebaseConfig);
       }
@@ -5225,14 +5295,16 @@ initPasswordToggles();
         const value=snapshot.val();
         const safeData=Array.isArray(value) ? value : [];
         sharedStudentAccountsCache=safeData.slice();
-        sharedStudentAccountsReady=true;
+        markSharedStudentAccountsReady();
         localStorage.setItem(STORAGE_STUDENT_KEY,JSON.stringify(safeData));
         syncStudentAccountsUi();
       },err=>{
         console.error('Lỗi Firebase SYNC:',err);
+        markSharedStudentAccountsReady();
       });
     }catch(err){
       console.error('Lỗi khởi tạo Firebase:',err);
+      markSharedStudentAccountsReady();
     }
   }
 
