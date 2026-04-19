@@ -961,72 +961,70 @@ html.mobile-landscape body{
   width:100%;
   min-height:100%;
 }
-@media screen and (max-width:1180px) and (orientation:landscape){
-  html.mobile-landscape{
-    height:100%;
-  }
-  html.mobile-landscape body{
-    overflow-x:auto;
-    overflow-y:auto;
-    -webkit-text-size-adjust:100%;
-    min-width:100vw;
-    min-height:100vh;
-    min-height:100dvh;
-  }
-  html.mobile-landscape .topBar,
-  html.mobile-landscape #infoBar,
-  html.mobile-landscape #levelBar,
-  html.mobile-landscape #gameBoard,
-  html.mobile-landscape #formulaBox,
-  html.mobile-landscape #finishBox,
-  html.mobile-landscape #bottomActionRow,
-  html.mobile-landscape #teacherPanel{
-    width:min(1180px,96vw);
-    margin-left:auto;
-    margin-right:auto;
-    box-sizing:border-box;
-  }
-  html.mobile-landscape .topBar-row{
-    width:100%;
-    flex-wrap:nowrap;
-    justify-content:center;
-    align-items:center;
-    gap:8px;
-    padding-left:0;
-    padding-right:0;
-  }
-  html.mobile-landscape .topBar-row input,
-  html.mobile-landscape .topBar-row select,
-  html.mobile-landscape .topBar-row button{
-    flex:0 1 auto;
-  }
-  html.mobile-landscape #studentName,
-  html.mobile-landscape #className,
-  html.mobile-landscape #schoolName{
-    width:22%;
-    min-width:140px;
-  }
-  html.mobile-landscape #playMode{
-    width:180px;
-    min-width:180px;
-  }
-  html.mobile-landscape #gameBoard{
-    grid-template-columns:repeat(4,170px);
-    gap:18px;
-    padding:12px;
-    justify-content:center;
-  }
-  html.mobile-landscape #formulaBox,
-  html.mobile-landscape #finishBox,
-  html.mobile-landscape #teacherPanel{
-    width:min(1120px,95vw);
-  }
-  html.mobile-landscape .rules-box{
-    width:min(1100px,94vw);
-  }
-  html.mobile-landscape .rules-grid{
-    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
-  }
+html.mobile-landscape{
+  height:100%;
+}
+html.mobile-landscape body{
+  overflow-x:auto;
+  overflow-y:auto;
+  -webkit-text-size-adjust:100%;
+  min-width:100vw;
+  min-height:100vh;
+  min-height:100dvh;
+}
+html.mobile-landscape .topBar,
+html.mobile-landscape #infoBar,
+html.mobile-landscape #levelBar,
+html.mobile-landscape #gameBoard,
+html.mobile-landscape #formulaBox,
+html.mobile-landscape #finishBox,
+html.mobile-landscape #bottomActionRow,
+html.mobile-landscape #teacherPanel{
+  width:min(1180px,96vw);
+  margin-left:auto;
+  margin-right:auto;
+  box-sizing:border-box;
+}
+html.mobile-landscape .topBar-row{
+  width:100%;
+  flex-wrap:nowrap;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  padding-left:0;
+  padding-right:0;
+}
+html.mobile-landscape .topBar-row input,
+html.mobile-landscape .topBar-row select,
+html.mobile-landscape .topBar-row button{
+  flex:0 1 auto;
+}
+html.mobile-landscape #studentName,
+html.mobile-landscape #className,
+html.mobile-landscape #schoolName{
+  width:22%;
+  min-width:140px;
+}
+html.mobile-landscape #playMode{
+  width:180px;
+  min-width:180px;
+}
+html.mobile-landscape #gameBoard{
+  grid-template-columns:repeat(4,170px);
+  gap:18px;
+  padding:12px;
+  justify-content:center;
+}
+html.mobile-landscape #formulaBox,
+html.mobile-landscape #finishBox,
+html.mobile-landscape #teacherPanel{
+  width:min(1120px,95vw);
+}
+html.mobile-landscape .rules-box{
+  width:min(1100px,94vw);
+}
+html.mobile-landscape .rules-grid{
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
 }
 </style>
 </head>
@@ -5829,8 +5827,6 @@ initPasswordToggles();
 })();
 
 (function(){
-  const DESKTOP_LANDSCAPE_WIDTH=1180;
-
   function getViewportSize(){
     const vv=window.visualViewport;
     const width=Math.max(
@@ -5843,7 +5839,7 @@ initPasswordToggles();
       Math.round(window.innerHeight || 0),
       Math.round(document.documentElement.clientHeight || 0)
     );
-    return { width, height };
+    return {width,height};
   }
 
   function isTouchMobileLandscape(){
@@ -5867,36 +5863,24 @@ initPasswordToggles();
     }catch(err){}
   }
 
-  function applyMobileLandscapeViewport(){
+  function applyMobileLandscapeMode(){
     const root=document.documentElement;
-    const body=document.body;
-    const viewport=getViewportSize();
     const enabled=isTouchMobileLandscape();
-
     root.classList.toggle('mobile-landscape', enabled);
-    body.classList.toggle('mobile-landscape', enabled);
-
-    if(enabled){
-      const availableWidth=Math.max(viewport.width, viewport.height);
-      body.style.minWidth=Math.min(DESKTOP_LANDSCAPE_WIDTH, availableWidth) + 'px';
-      body.style.width='100%';
-    }else{
-      body.style.minWidth='';
-      body.style.width='';
-    }
-
+    document.body.classList.toggle('mobile-landscape', enabled);
     tryLockLandscape();
     window.dispatchEvent(new Event('resize'));
   }
 
   function updateMobileLandscapeMode(){
-    applyMobileLandscapeViewport();
+    applyMobileLandscapeMode();
     requestAnimationFrame(()=>{
-      applyMobileLandscapeViewport();
-      requestAnimationFrame(applyMobileLandscapeViewport);
+      applyMobileLandscapeMode();
+      requestAnimationFrame(applyMobileLandscapeMode);
     });
-    setTimeout(applyMobileLandscapeViewport, 120);
-    setTimeout(applyMobileLandscapeViewport, 260);
+    setTimeout(applyMobileLandscapeMode, 80);
+    setTimeout(applyMobileLandscapeMode, 220);
+    setTimeout(applyMobileLandscapeMode, 420);
   }
 
   ['pointerdown','touchstart','click'].forEach(evt=>{
@@ -5906,12 +5890,7 @@ initPasswordToggles();
   });
 
   window.addEventListener('resize', updateMobileLandscapeMode, {passive:true});
-  window.addEventListener('orientationchange', ()=>{
-    updateMobileLandscapeMode();
-    setTimeout(updateMobileLandscapeMode, 80);
-    setTimeout(updateMobileLandscapeMode, 220);
-    setTimeout(updateMobileLandscapeMode, 420);
-  }, {passive:true});
+  window.addEventListener('orientationchange', updateMobileLandscapeMode, {passive:true});
 
   if(screen && screen.orientation && typeof screen.orientation.addEventListener==='function'){
     screen.orientation.addEventListener('change', updateMobileLandscapeMode, {passive:true});
