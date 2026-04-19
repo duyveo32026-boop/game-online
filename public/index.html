@@ -1439,17 +1439,6 @@ function interruptAndSpeakVietnameseMale(text){
   speakVietnameseMale(text,true);
 }
 
-function showImmediateVoiceAlert(message, voiceText=''){
-  const spoken = String(voiceText || message || '').trim();
-  stopVoicePromptQueue();
-  if(spoken){
-    interruptAndSpeakVietnameseMale(spoken);
-  }
-  setTimeout(()=>{
-    alert(message);
-  }, 120);
-}
-
 function playNextVoicePromptInQueue(){
   if(!voicePromptQueue.length){
     voicePromptIsPlaying=false;
@@ -1499,101 +1488,34 @@ voicePromptAudio.addEventListener('error',()=>{
   playNextVoicePromptInQueue();
 });
 
-
-const LOCAL_VOICE_MP3_BASE='MP3/';
-const FORMULA_AUDIO_MAP={
-  "Bình phương của một tổng":"formula1.mp3",
-  "Bình phương của một hiệu":"formula2.mp3",
-  "Hiệu hai bình phương":"formula3.mp3",
-  "Lập phương của một tổng":"formula4.mp3",
-  "Lập phương của một hiệu":"formula5.mp3",
-  "Tổng hai lập phương":"formula6.mp3",
-  "Hiệu hai lập phương":"formula7.mp3"
-};
-
-function buildLocalMp3Url(fileName){
-  return `${LOCAL_VOICE_MP3_BASE}${fileName}`;
-}
-
-function getHintAudioFileByText(text){
-  const value=String(text||'').toLowerCase();
-  if(!value) return 'hint3.mp3';
-  if(value.includes('dấu của hạng tử giữa') || value.includes('dấu cộng') || value.includes('dấu trừ')){
-    return 'hint1.mp3';
-  }
-  if(value.includes('hệ số 1-3-3-1') || value.includes('dạng lập phương') || value.includes('4 hạng tử') || value.includes('hệ số 3')){
-    return 'hint2.mp3';
-  }
-  return 'hint3.mp3';
-}
-
-function getHintDisplayTextByText(text){
-  const fileName=getHintAudioFileByText(text);
-  if(fileName==='hint1.mp3'){
-    return '💡 Gợi ý: Hãy chú ý dấu cộng và dấu trừ trong biểu thức.';
-  }
-  if(fileName==='hint2.mp3'){
-    return '💡 Gợi ý: Em hãy xem lại số mũ và hệ số của hạng tử giữa.';
-  }
-  return '💡 Gợi ý: Hãy đối chiếu với công thức hằng đẳng thức đã học.';
-}
-
-function buildNarrationQueueFromMp3(spokenText){
-  const clean=String(spokenText||'').trim();
-  if(!clean) return [];
-
-  if(clean==='Hết giờ rồi' || clean==='Hết giờ' || clean==='Bạn hết lượt ghép rồi' || clean==='Bạn đã ghép sai nhiều lần'){
-    return [{source:'local_mp3',url:buildLocalMp3Url('lose.mp3')}];
-  }
-
-  if(clean.startsWith('Bạn đúng rồi.')){
-    const formulaName=clean.replace(/^Bạn đúng rồi\.\s*/,'').trim();
-    const queue=[{source:'local_mp3',url:buildLocalMp3Url('correct.mp3')}];
-    const formulaFile=FORMULA_AUDIO_MAP[formulaName];
-    if(formulaFile){
-      queue.push({source:'local_mp3',url:buildLocalMp3Url(formulaFile)});
-    }
-    return queue;
-  }
-
-  if(clean.startsWith('Chúc mừng bạn đã hoàn thành cấp độ')){
-    return [{source:'local_mp3',url:buildLocalMp3Url('level_complete.mp3')}];
-  }
-
-  if(clean.startsWith('Xuất sắc!')){
-    return [{source:'local_mp3',url:buildLocalMp3Url('win.mp3')}];
-  }
-
-  return [{source:'local_mp3',url:buildLocalMp3Url(getHintAudioFileByText(clean))}];
-}
-
-
 async function speakVietnameseMale(text,forceSpeak=false){
   const spokenText=getVoiceReadText(text);
   if(!spokenText) return;
 
   const now=Date.now();
   const dedupeKey=`${forceSpeak?'1':'0'}|${spokenText}`;
-
   if(!forceSpeak && dedupeKey===voicePromptLastKey && now-voicePromptLastAt<250){
     return;
   }
-
   voicePromptLastKey=dedupeKey;
   voicePromptLastAt=now;
 
   stopVoicePromptQueue();
 
-  try{
-    const localQueue=buildNarrationQueueFromMp3(spokenText);
-    if(!localQueue.length) return;
-    voicePromptQueue=localQueue;
-    setTimeout(()=>{
-      playNextVoicePromptInQueue();
-    },50);
-  }catch(err){
-    console.warn('Lỗi phát mp3 giọng đọc:',err);
+  const audioUrl=await requestOpenAITtsUrl(spokenText);
+  if(audioUrl){
+    voicePromptQueue=[{source:'openai',url:audioUrl}];
+    playNextVoicePromptInQueue();
+    return;
   }
+
+  const fallbackChunks=splitVoicePromptText(spokenText,170).map(item=>({
+    source:'google',
+    url:buildGoogleTranslateTtsUrl(item)
+  }));
+  if(!fallbackChunks.length) return;
+  voicePromptQueue=fallbackChunks;
+  playNextVoicePromptInQueue();
 }
 
 let welcomeAudioPlayed=false;
@@ -1914,12 +1836,28 @@ function getTeacherAccounts(){
   return DEFAULT_TEACHER_ACCOUNTS.slice();
 }
 
+let sharedStudentAccountsCache=null;
+let sharedStudentAccountsReady=false;
+let sharedStudentAccountsSyncStarted=false;
+let sharedStudentAccountsWriting=false;
+let sharedStudentAccountsDbRef=null;
+
 function getStudentAccounts(){
+  if(Array.isArray(sharedStudentAccountsCache)) return sharedStudentAccountsCache.slice();
   return JSON.parse(localStorage.getItem(STORAGE_STUDENT_KEY)||"[]");
 }
 
 function setStudentAccounts(data){
-  localStorage.setItem(STORAGE_STUDENT_KEY,JSON.stringify(data||[]));
+  const safeData=Array.isArray(data) ? data.slice() : [];
+  sharedStudentAccountsCache=safeData.slice();
+  sharedStudentAccountsReady=true;
+  localStorage.setItem(STORAGE_STUDENT_KEY,JSON.stringify(safeData));
+  if(sharedStudentAccountsDbRef && !sharedStudentAccountsWriting){
+    sharedStudentAccountsWriting=true;
+    sharedStudentAccountsDbRef.set(safeData)
+      .catch(err=>console.error('Lỗi Firebase SET:',err))
+      .finally(()=>{ sharedStudentAccountsWriting=false; });
+  }
 }
 function getStudentAccountIdentity(account){
   return [normalizeLookupText(account && account.name), normalizeClassLookup(account && account.className), normalizeSchoolLookup(account && account.schoolName), normalizeText(account && account.username)].join('|');
@@ -2090,7 +2028,6 @@ function renderAccountManager(){
     </div>
     <div class="account-bulk-bar">
       <div class="account-actions-row" style="margin-top:0;">
-        <button type="button" style="background:#0ea5e9;color:#fff;" onclick="downloadAllStudentAccounts()">Tải danh sách người dùng</button>
         <button onclick="toggleSelectAllStudentAccounts()">${allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}</button>
         <button class="delete-btn" onclick="deleteSelectedStudentAccounts()">Xóa tất cả</button>
       </div>
@@ -3081,9 +3018,9 @@ function startGame(){
         setGameSessionActive(false);
         saveAttempt(false,"Hết giờ");
         safePlay(wrongSound);
+        alert("Hết giờ");
         document.getElementById("formulaBox").innerText="❌ Bạn đã hết thời gian.";
-        interruptAndSpeakVietnameseMale("Hết giờ");
-        showImmediateVoiceAlert("Hết giờ","Hết giờ");
+        interruptAndSpeakVietnameseMale("Hết giờ rồi");
         renderFinishBox(false,"Hết giờ");
         return;
       }
@@ -3211,8 +3148,8 @@ function finishLoseByLives(){
   saveAttempt(false,"Hết mạng");
   document.getElementById("formulaBox").innerText="💀 Bạn đã ghép sai nhiều lần.";
   safePlay(wrongSound);
-  interruptAndSpeakVietnameseMale("Bạn đã ghép sai nhiều lần");
-  showImmediateVoiceAlert("Bạn đã ghép sai nhiều lần","Bạn đã ghép sai nhiều lần");
+  alert("Bạn đã ghép sai nhiều lần");
+  interruptAndSpeakVietnameseMale("Bạn hết lượt ghép rồi");
   renderFinishBox(false,"Hết mạng");
 }
 
@@ -3303,12 +3240,7 @@ function handleWrongMatch(a,b){
   const cfg=getLevelConfig(currentLevel);
   const wrongHintText=getSmartWrongHint(a,b);
   document.getElementById("formulaBox").innerText=wrongHintText;
-  const speakWrongHintAfterSound=()=>{
-    wrongSound.removeEventListener('ended',speakWrongHintAfterSound);
-    interruptAndSpeakVietnameseMale(wrongHintText);
-  };
-  wrongSound.removeEventListener('ended',speakWrongHintAfterSound);
-  wrongSound.addEventListener('ended',speakWrongHintAfterSound,{once:true});
+  interruptAndSpeakVietnameseMale(wrongHintText);
 
   clearPendingWrongHighlight();
 
@@ -3441,12 +3373,6 @@ function launchCelebration(){
   overlay.innerHTML="";
   overlay.appendChild(msg);
   overlay.classList.add("show");
-
-  if(currentLevel===7){
-    interruptAndSpeakVietnameseMale("Xuất sắc!");
-  }else{
-    interruptAndSpeakVietnameseMale(`Chúc mừng bạn đã hoàn thành cấp độ ${currentLevel}`);
-  }
 
   for(let i=0;i<140;i++){
     const piece=document.createElement("div");
@@ -3779,17 +3705,6 @@ function teacherLogin(){
 }
 
 function openCommentModal(name,className,schoolName,level,attemptRecord){
-  if(arguments.length===1 && Number.isInteger(Number(name))){
-    const data=(JSON.parse(localStorage.getItem(STORAGE_RESULTS_KEY))||[]).map(item=>normalizeStoredAttempt(item));
-    const record=data[Number(name)];
-    if(!record) return;
-    name=record.name||"";
-    className=record.className||"";
-    schoolName=record.schoolName||"";
-    level=record.level||1;
-    attemptRecord=record;
-  }
-
   const infoHtml=[
     `<b>Học sinh:</b> ${escapeHtml(name||"")}`,
     `<b>Lớp:</b> ${escapeHtml(className||"")}`,
@@ -4134,25 +4049,10 @@ function closeStudentLogin(){
   document.getElementById('studentLoginModal').classList.remove('show');
 }
 
-
-function normalizeLoginCredential(value){
-  return String(value||'')
-    .normalize('NFKC')
-    .replace(/[\u200B-\u200D\uFEFF]/g,'')
-    .replace(/[“”]/g,'"')
-    .replace(/[‘’]/g,"'")
-    .replace(/\u00A0/g,' ')
-    .trim()
-    .replace(/\s+/g,' ');
-}
-
 function studentLogin(){
-  const username=normalizeLoginCredential(document.getElementById('studentUser').value);
-  const password=normalizeLoginCredential(document.getElementById('studentPass').value);
-  const account=getStudentAccounts().find(item=>
-    normalizeLoginCredential(item.username||'')===username &&
-    normalizeLoginCredential(item.password||'')===password
-  );
+  const username=document.getElementById('studentUser').value.trim();
+  const password=document.getElementById('studentPass').value.trim();
+  const account=getStudentAccounts().find(item=>String(item.username||'').trim()===username && String(item.password||'').trim()===password);
   if(!account){
     document.getElementById('studentLoginError').innerText='Sai tài khoản hoặc mật khẩu học sinh.';
     return;
@@ -4971,51 +4871,6 @@ function downloadLatestImportedStudentAccounts(){
   XLSX.writeFile(wb,'danh_sach_hoc_sinh.xlsx',{bookType:'xlsx'});
 }
 
-function downloadAllStudentAccounts(){
-  if(typeof XLSX==='undefined'){
-    alert('Thiếu thư viện XLSX để tải danh sách người dùng.');
-    return;
-  }
-  const accounts=[...getStudentAccounts()].sort((a,b)=>String(a.className||'').localeCompare(String(b.className||''),'vi',{sensitivity:'base'}) || String(a.name||'').localeCompare(String(b.name||''),'vi',{sensitivity:'base'}));
-  if(!accounts.length){
-    alert('Chưa có tài khoản học sinh nào để tải xuống.');
-    return;
-  }
-  const orderedAccounts=[...accounts].sort((a,b)=>{
-    const nameA=String(a.name||'').trim();
-    const nameB=String(b.name||'').trim();
-    const partsA=nameA.split(/\s+/).filter(Boolean);
-    const partsB=nameB.split(/\s+/).filter(Boolean);
-    const givenA=partsA.length ? partsA[partsA.length-1] : '';
-    const givenB=partsB.length ? partsB[partsB.length-1] : '';
-    const byGiven=givenA.localeCompare(givenB,'vi',{sensitivity:'base'});
-    if(byGiven!==0) return byGiven;
-    return nameA.localeCompare(nameB,'vi',{sensitivity:'base'});
-  });
-  const rows=[
-    ['STT','Họ tên học sinh','Lớp','Trường','Tài khoản','Mật khẩu','Cập nhật'],
-    ...orderedAccounts.map((item,index)=>[
-      String(index+1),
-      String(item.name||''),
-      String(item.className||''),
-      String(item.schoolName||''),
-      String(item.username||''),
-      String(item.password||''),
-      String(formatDateTime(item.updatedAt||item.createdAt||0)||'')
-    ])
-  ];
-  const sheet=XLSX.utils.aoa_to_sheet(rows);
-  Object.keys(sheet).forEach(key=>{
-    if(key[0]==='!') return;
-    sheet[key].t='s';
-    sheet[key].z='@';
-  });
-  sheet['!cols']=[{wch:8},{wch:28},{wch:12},{wch:28},{wch:20},{wch:16},{wch:22}];
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,sheet,'Nguoi dung');
-  XLSX.writeFile(wb,'danh_sach_nguoi_dung.xlsx',{bookType:'xlsx'});
-}
-
 function generateStudentUsername(name,className,accounts){
   const base=(normalizeLookupText(name).replace(/\s+/g,'') || 'hocsinh') + (normalizeClassLookup(className) || '');
   let candidate=base || 'hocsinh';
@@ -5140,6 +4995,67 @@ toggleViewCommentButton();
 window.addEventListener('resize',updateBottomActionRowSpacing);
 
 initPasswordToggles();
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+(function(){
+  const firebaseConfig={
+    apiKey: "AIzaSyD9LoJdXyRmcwgqSXDsOFKapJteyuqkFs0",
+    authDomain: "game-hang-dang-thuc.firebaseapp.com",
+    databaseURL: "https://game-hang-dang-thuc-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    projectId: "game-hang-dang-thuc",
+    storageBucket: "game-hang-dang-thuc.firebasestorage.app",
+    messagingSenderId: "1091799256445",
+    appId: "1:1091799256445:web:7440be043652cb8124d014"
+  };
+
+  function syncStudentAccountsUi(){
+    try{
+      if(typeof renderTeacherPanel==='function' && teacherLoggedIn){
+        renderTeacherPanel();
+      }
+      if(typeof handleStudentNameInput==='function') handleStudentNameInput();
+      if(typeof handleSchoolNameInput==='function') handleSchoolNameInput();
+      if(typeof toggleViewCommentButton==='function') toggleViewCommentButton();
+    }catch(err){
+      console.warn('Lỗi làm mới giao diện tài khoản:',err);
+    }
+  }
+
+  function initSharedStudentAccountSync(){
+    try{
+      if(sharedStudentAccountsSyncStarted) return;
+      sharedStudentAccountsSyncStarted=true;
+      if(typeof firebase==='undefined' || !firebase.apps) return;
+      if(!firebase.apps.length){
+        firebase.initializeApp(firebaseConfig);
+      }
+      const db=firebase.database();
+      sharedStudentAccountsDbRef=db.ref('student_accounts');
+      sharedStudentAccountsDbRef.on('value',snapshot=>{
+        if(sharedStudentAccountsWriting) return;
+        const value=snapshot.val();
+        const safeData=Array.isArray(value) ? value : [];
+        sharedStudentAccountsCache=safeData.slice();
+        sharedStudentAccountsReady=true;
+        localStorage.setItem(STORAGE_STUDENT_KEY,JSON.stringify(safeData));
+        syncStudentAccountsUi();
+      },err=>{
+        console.error('Lỗi Firebase SYNC:',err);
+      });
+    }catch(err){
+      console.error('Lỗi khởi tạo Firebase:',err);
+    }
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',initSharedStudentAccountSync,{once:true});
+  }else{
+    initSharedStudentAccountSync();
+  }
+})();
 </script>
 </body>
 </html>
