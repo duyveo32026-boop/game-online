@@ -778,19 +778,22 @@ canvas{
   margin-bottom:18px;
 }
 .rules-grid{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
   gap:14px;
   margin:16px auto 18px;
-  max-width:920px;
+  max-width:962px;
 }
 .rule-card{
+  width:220px;
+  min-height:214px;
   background:#f8fafc;
   border:1px solid #dbeafe;
   border-radius:16px;
-  padding:16px 12px 14px;
-  min-height:150px;
+  padding:14px 14px 12px;
   box-shadow:0 8px 18px rgba(37,99,235,.08);
+  box-sizing:border-box;
 }
 .rule-card h4{
   margin:0 0 8px;
@@ -802,15 +805,6 @@ canvas{
   line-height:1.6;
   color:#334155;
   font-size:15px;
-}
-.rules-grid .rule-card:nth-child(5){
-  grid-column:1 / span 1;
-}
-.rules-grid .rule-card:nth-child(6){
-  grid-column:2 / span 1;
-}
-.rules-grid .rule-card:nth-child(7){
-  grid-column:3 / span 1;
 }
 .rules-list{
   background:#eff6ff;
@@ -1057,7 +1051,7 @@ html.mobile-landscape body{
     <h2>📘 THỂ LỆ GAME</h2>
     <div class="rules-intro">Người chơi đọc kỹ hướng dẫn trước khi bắt đầu. Sau khi đóng bảng này, bạn sẽ vào giao diện chính của game và bạn có thể nhập thông tin để chơi.</div>
     <div class="rules-list">
-      <b>Cách chơi:</b> Chọn cấp độ, click vào nút Bắt đầu. Lật thẻ và ghép đúng hai vế của hằng đẳng thức. Mỗi cặp ghép đúng được cộng 10 điểm.
+      <b>Cách chơi:</b> Nhập họ tên, lớp, trường rồi chọn cấp độ. Lật thẻ và ghép đúng hai vế của hằng đẳng thức. Mỗi cặp ghép đúng được cộng 10 điểm. Một số cấp độ có giới hạn thời gian và số lần ghép sai tối đa.
     </div>
     <div class="rules-grid">
       <div class="rule-card"><h4>Cấp độ 1</h4><p>Dễ nhất. Không giới hạn thời gian, không giới hạn số lần sai. Phù hợp để làm quen luật chơi.</p></div>
