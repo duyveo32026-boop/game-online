@@ -1994,6 +1994,33 @@ function setAttemptCommentForRecord(store,item,commentText){
   });
   return store;
 }
+function updateTeacherCommentInResults(item,commentText){
+  if(!item) return Promise.resolve(getResultsData());
+  const safeText=String(commentText||"").trim();
+  const target=normalizeStoredAttempt(item);
+  const targetSyncKey=makeAttemptSyncKey(target);
+  const targetStudentKey=makeStudentKey(target.name,target.className,target.schoolName);
+  const targetLevel=Number(target.level)||1;
+  const targetPlayedAt=Number(target.playedAt||target.completedAt)||0;
+  let changed=false;
+  const updatedData=getResultsData().map(raw=>{
+    const normalized=normalizeStoredAttempt(raw);
+    const sameSyncKey=makeAttemptSyncKey(normalized)===targetSyncKey;
+    const playedAtValue=Number(normalized.playedAt||normalized.completedAt)||0;
+    const sameFallback=makeStudentKey(normalized.name,normalized.className,normalized.schoolName)===targetStudentKey
+      && (Number(normalized.level)||1)===targetLevel
+      && (
+        playedAtValue===targetPlayedAt
+        || (targetPlayedAt>0 && playedAtValue>0 && Math.abs(playedAtValue-targetPlayedAt)<=1500)
+      );
+    if(sameSyncKey || sameFallback){
+      changed=true;
+      return Object.assign({}, raw, { teacherComment:safeText });
+    }
+    return raw;
+  });
+  return changed ? setResultsData(updatedData) : Promise.resolve(updatedData);
+}
 function mergeAttemptLists(preferredList,baseList){
   const mergedMap=new Map();
   (Array.isArray(baseList)?baseList:[]).forEach(item=>{
@@ -2651,6 +2678,8 @@ function makeAttemptCommentKey(item){
 
 function findAttemptComment(item){
   if(!item) return "";
+  const embeddedComment=String(item.teacherComment||"").trim();
+  if(embeddedComment) return embeddedComment;
   if(typeof getAttemptCommentByRecord==='function'){
     const matched=getAttemptCommentByRecord(item);
     if(matched) return String(matched||"");
@@ -2679,7 +2708,7 @@ function findAttemptComment(item){
   return matchedKey ? String(store[matchedKey]||"") : "";
 }
 
-function setAttemptComment(item, commentText){
+async function setAttemptComment(item, commentText){
   if(!item) return Promise.resolve();
   const store=getAttemptCommentStore();
   const safeText=String(commentText||"").trim();
@@ -2691,6 +2720,7 @@ function setAttemptComment(item, commentText){
     store[key]=safeText;
   }
 
+  await updateTeacherCommentInResults(item,safeText);
   return setAttemptCommentStore(store);
 }
 
@@ -2717,6 +2747,7 @@ function normalizeStoredAttempt(item){
   normalized.correctPairs=getEffectiveCorrectPairs(normalized);
   normalized.wrongPairs=getEffectiveWrongPairs(normalized);
   normalized.score=getEffectiveScore(normalized);
+  normalized.teacherComment=String(normalized.teacherComment||"");
   if(!Array.isArray(normalized.matchedPairs)) normalized.matchedPairs=[];
   if(!Array.isArray(normalized.attemptPairs)) normalized.attemptPairs=[];
   return normalized;
