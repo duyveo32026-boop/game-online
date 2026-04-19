@@ -973,24 +973,59 @@ html.mobile-landscape body{
     min-height:100vh;
     min-height:100dvh;
   }
-  html.mobile-landscape #gameBoard{
-    grid-template-columns:repeat(4,minmax(150px,170px));
-    gap:14px;
-    padding:10px;
-    width:min(100%,860px);
-    margin:18px auto 10px;
-  }
-  html.mobile-landscape .topBar-row,
+  html.mobile-landscape .topBar,
+  html.mobile-landscape #infoBar,
   html.mobile-landscape #levelBar,
-  html.mobile-landscape #bottomActionRow,
-  html.mobile-landscape #infoBar{
-    padding-left:8px;
-    padding-right:8px;
-  }
-  html.mobile-landscape #teacherPanel,
+  html.mobile-landscape #gameBoard,
+  html.mobile-landscape #formulaBox,
   html.mobile-landscape #finishBox,
-  html.mobile-landscape #formulaBox{
-    width:min(95vw,1120px);
+  html.mobile-landscape #bottomActionRow,
+  html.mobile-landscape #teacherPanel{
+    width:min(1180px,96vw);
+    margin-left:auto;
+    margin-right:auto;
+    box-sizing:border-box;
+  }
+  html.mobile-landscape .topBar-row{
+    width:100%;
+    flex-wrap:nowrap;
+    justify-content:center;
+    align-items:center;
+    gap:8px;
+    padding-left:0;
+    padding-right:0;
+  }
+  html.mobile-landscape .topBar-row input,
+  html.mobile-landscape .topBar-row select,
+  html.mobile-landscape .topBar-row button{
+    flex:0 1 auto;
+  }
+  html.mobile-landscape #studentName,
+  html.mobile-landscape #className,
+  html.mobile-landscape #schoolName{
+    width:22%;
+    min-width:140px;
+  }
+  html.mobile-landscape #playMode{
+    width:180px;
+    min-width:180px;
+  }
+  html.mobile-landscape #gameBoard{
+    grid-template-columns:repeat(4,170px);
+    gap:18px;
+    padding:12px;
+    justify-content:center;
+  }
+  html.mobile-landscape #formulaBox,
+  html.mobile-landscape #finishBox,
+  html.mobile-landscape #teacherPanel{
+    width:min(1120px,95vw);
+  }
+  html.mobile-landscape .rules-box{
+    width:min(1100px,94vw);
+  }
+  html.mobile-landscape .rules-grid{
+    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
   }
 }
 </style>
@@ -5795,14 +5830,13 @@ initPasswordToggles();
 
 (function(){
   function isTouchMobileLandscape(){
-    const root=document.documentElement;
     const isTouchDevice=('ontouchstart' in window) || (navigator.maxTouchPoints>0) || (navigator.msMaxTouchPoints>0);
     const viewW=Math.max(window.innerWidth||0, document.documentElement.clientWidth||0);
     const viewH=Math.max(window.innerHeight||0, document.documentElement.clientHeight||0);
     const shortestSide=Math.min(viewW, viewH);
     const isMobileViewport=shortestSide<=820;
     const isLandscape=window.matchMedia('(orientation: landscape)').matches || viewW>viewH;
-    return !!(root && isTouchDevice && isMobileViewport && isLandscape);
+    return !!(isTouchDevice && isMobileViewport && isLandscape);
   }
 
   function tryLockLandscape(){
@@ -5810,14 +5844,13 @@ initPasswordToggles();
     const orientationApi=(screen && screen.orientation) ? screen.orientation : null;
     if(!orientationApi || typeof orientationApi.lock!=='function') return;
     try{
-      const locked=orientationApi.lock('landscape');
-      if(locked && typeof locked.catch==='function') locked.catch(()=>{});
+      const result=orientationApi.lock('landscape');
+      if(result && typeof result.catch==='function') result.catch(()=>{});
     }catch(err){}
   }
 
   function updateMobileLandscapeMode(){
     const root=document.documentElement;
-    if(!root) return;
     root.classList.toggle('mobile-landscape', isTouchMobileLandscape());
     tryLockLandscape();
     setTimeout(()=>{
