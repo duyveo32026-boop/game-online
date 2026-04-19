@@ -2648,9 +2648,14 @@ function makeAttemptCommentKey(item){
 
 function findAttemptComment(item){
   if(!item) return "";
+  if(typeof getAttemptCommentByRecord==='function'){
+    const matched=getAttemptCommentByRecord(item);
+    if(matched) return String(matched||"");
+  }
+
   const store=getAttemptCommentStore();
   const directKey=makeAttemptCommentKey(item);
-  if(store[directKey]) return store[directKey];
+  if(store[directKey]) return String(store[directKey]||"");
 
   const targetStudentKey=makeStudentKey(item.name,item.className,item.schoolName);
   const targetLevel=Number(item.level)||1;
@@ -2674,8 +2679,15 @@ function findAttemptComment(item){
 function setAttemptComment(item, commentText){
   if(!item) return Promise.resolve();
   const store=getAttemptCommentStore();
-  const key=makeAttemptCommentKey(item);
-  store[key]=String(commentText||"").trim();
+  const safeText=String(commentText||"").trim();
+
+  if(typeof setAttemptCommentForRecord==='function'){
+    setAttemptCommentForRecord(store,item,safeText);
+  }else{
+    const key=makeAttemptCommentKey(item);
+    store[key]=safeText;
+  }
+
   return setAttemptCommentStore(store);
 }
 
@@ -2884,6 +2896,15 @@ function toggleViewCommentButton(){
 
 async function showStudentComment(){
   await waitForSharedGameDataSync({timeoutMs:10000});
+  try{
+    if(sharedAttemptCommentsDbRef){
+      const snapshot=await sharedAttemptCommentsDbRef.once('value');
+      const value=snapshot.val();
+      const safeData=(value && typeof value==='object') ? value : {};
+      sharedAttemptCommentsCache=Object.assign({}, safeData);
+      localStorage.setItem(STORAGE_ATTEMPT_COMMENTS_KEY, JSON.stringify(sharedAttemptCommentsCache));
+    }
+  }catch(err){}
   const name=document.getElementById("studentName").value.trim();
   const className=document.getElementById("className").value.trim();
   const schoolName=document.getElementById("schoolName").value.trim();
